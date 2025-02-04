@@ -92,11 +92,11 @@ export interface IBuffer extends Uint8Array {
 	copy(targetIBuffer: Uint8Array, targetStart?: number, sourceStart?: number, sourceEnd?: number): number;
 	clone(start?: number, end?: number): IBuffer;
 	slice(start?: number, end?: number): IBuffer;
-	filter(callbackfn: (value: number, index: number, array: IBuffer) => unknown, thisArg?: any): IBuffer;
-	map(callbackfn: (value: number, index: number, array: IBuffer) => number, thisArg?: any): IBuffer;
-	every(callbackfn: (value: number, index: number, array: IBuffer) => unknown, thisArg?: any): boolean;
-	some(callbackfn: (value: number, index: number, array: IBuffer) => unknown, thisArg?: any): boolean;
-	reverse(): IBuffer;
+	filter(callbackfn: (value: number, index: number, array: this) => unknown, thisArg?: any): IBuffer;
+	map(callbackfn: (value: number, index: number, array: this) => number, thisArg?: any): IBuffer;
+	every(callbackfn: (value: number, index: number, array: this) => unknown, thisArg?: any): boolean;
+	some(callbackfn: (value: number, index: number, array: this) => unknown, thisArg?: any): boolean;
+	reverse(): this;
 	subarray(begin?: number, end?: number): IBuffer;
 	toJSON(): { type: 'Buffer'; data: number[] };
 	write(arg0: FromArg, selfOffset?: number, encoding?: IBufferEncoding): number;
@@ -304,8 +304,8 @@ const from = function(
 		return new IBufferIMPL(value.buffer, value.byteOffset, value.byteLength);
 	} else {
 			var bf = encodingOrMapfn ? 
-				Uint8Array.from(value as any, encodingOrMapfn as any, thisArg): // encodingOrMapfn unedfined is not defined
-				Uint8Array.from(value as any);
+				Uint8Array.from(value as any, encodingOrMapfn as any, thisArg) as Uint8Array: // encodingOrMapfn unedfined is not defined
+				Uint8Array.from(value as any) as Uint8Array;
 		(bf as any).__proto__ = IBufferIMPL.prototype;
 		return bf as IBufferIMPL;
 	}
@@ -389,26 +389,27 @@ export class IBufferIMPL extends Uint8Array implements IBuffer {
 		return new IBufferIMPL(super.slice(start, end).buffer);
 	}
 
-	filter(cb: (value: number, index: number, array: IBuffer) => any, thisArg?: any): IBuffer {
+	filter(cb: (value: number, index: number, array: this) => any, thisArg?: any): IBuffer {
 		return new IBufferIMPL(super.filter(
 			cb as (value: number, index: number, array: Uint8Array) => any, thisArg).buffer);
 	}
 	
-	map(cb: (value: number, index: number, array: IBuffer) => number, thisArg?: any): IBuffer {
+	map(cb: (value: number, index: number, array: this) => number, thisArg?: any): IBuffer {
 		return new IBufferIMPL(super.map(
 			cb as (value: number, index: number, array: Uint8Array) => number, thisArg).buffer);
 	}
 
-	every(cb: (value: number, index: number, array: IBuffer) => unknown, thisArg?: any): boolean {
+	every(cb: (value: number, index: number, array: this) => unknown, thisArg?: any): boolean {
 		return super.every(cb as (value: number, index: number, array: Uint8Array) => unknown, thisArg);
 	}
 
-	some(cb: (value: number, index: number, array: IBuffer) => unknown, thisArg?: any): boolean {
+	some(cb: (value: number, index: number, array: this) => unknown, thisArg?: any): boolean {
 		return super.some(cb as (value: number, index: number, array: Uint8Array) => unknown, thisArg);
 	}
 
-	reverse(): IBuffer {
-		return new IBufferIMPL(super.reverse().buffer);
+	reverse(): this {
+		// return new IBufferIMPL(super.reverse().buffer);
+		return super.reverse() as this;
 	}
 
 	subarray(begin?: number, end?: number): IBuffer {
