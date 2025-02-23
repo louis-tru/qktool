@@ -95,8 +95,8 @@ function ungzip(buffer: Buffer) {
 	return zlib ? _ungzip(buffer): buffer;
 }
 
-export const PING_BUFFER = jsonb.binaryify(Types.T_PING);
-export const PONG_BUFFER = jsonb.binaryify(Types.T_PONG);
+export const PING_BUFFER: Uint8Array = jsonb.binaryify(Types.T_PING);
+export const PONG_BUFFER: Uint8Array = jsonb.binaryify(Types.T_PONG);
 
 function toBuffer(data: any, isGzip: boolean): Promise<Uint8Array> {
 	var bf = jsonb.binaryify(data);
@@ -146,7 +146,7 @@ export class DataBuilder {
 		}
 	}
 
-	builder(isGzip = false) {
+	builder(isGzip = false): Promise<Uint8Array> {
 		return toBuffer([
 			this.type, this.service, this.name,
 			this.data, this.error, this.cb, this.sender

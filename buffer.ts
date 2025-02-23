@@ -54,11 +54,11 @@ export function isBuffer(buffer: any) {
 
 export const isInterfaceBuffer = isBuffer;
 
-export function isUint8Array(arr: any) {
+export function isUint8Array(arr: any): boolean {
 	return arr instanceof Uint8Array;
 }
 
-export function isTypedArray(arr: any) {
+export function isTypedArray(arr: any): boolean {
 	return arr instanceof TypedArrayConstructor;
 }
 
