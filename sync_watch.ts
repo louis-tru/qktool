@@ -66,12 +66,17 @@ function each_directory(root: string, dir: string, cb: Callback) {
 }
 
 function sync(type: string, dir: string, filename: string) {
-	if (ignore.indexOf(filename) != -1) return;
-	console.log('sync', type, dir, filename, '...');
+	if (
+		ignore.indexOf(filename) >= 0 ||
+		ignore.indexOf(path.basename(filename)) >= 0 || // basename
+		ignore.indexOf(path.extname(filename)) >= 0    // extname
+	)
+		return;
+	console.log('sync', type, `${dir}/${filename}`, '...');
 	var cmd = `scp ${root}/${dir}/${filename} ${target}/${dir}`;
 	// console.log(cmd);
 	var r = execSync(cmd);
-	console.log('sync', type, dir, filename, r.code == 0 ? 'ok': 'fail');
+	console.log('sync', type, `${dir}/${filename}`, r.code == 0 ? 'ok': 'fail');
 }
 
 function start() {
