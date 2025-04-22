@@ -319,8 +319,8 @@ export class URL {
 	}
 	
 	// relative path
-	relative(targetPath: string): string {
-		var target = new URL(targetPath);
+	relative(to: string): string {
+		var target = new URL(to);
 		if ( this.origin != target.origin )
 			return (this as any)._origin + (this as any)._filename;
 		var ls: string[]  = (this as any)._filename == '/' ? [] : (this as any)._filename.split('/');
@@ -505,11 +505,11 @@ export default {
 	},
 	
 	// relative path
-	relative(path: string, target: string) {
+	relative(from: string, to: string) {
 		if (arguments.length > 1) 
-			return get_path(path).relative(target);
+			return get_path(from).relative(to);
 		else 
-			return get_path(path).relative(path);
+			return get_path(from).relative('');
 	},
 	
 }
