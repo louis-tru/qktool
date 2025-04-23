@@ -771,7 +771,7 @@ function exec(
 						handlePromise(db.exec(sql));
 					}
 				}).catch(e=>{
-					console.warn('encark#map#exec', e);
+					console.warn('qktool#map#exec', e);
 					handlePromise(db.exec(sql));
 				});
 			} else {

@@ -334,7 +334,8 @@ export class URL {
 					ls = [];
 					for (var j = 0; j < len; j++)
 						ls.push('..');
-					return ls.join('/') + '/' + ls2.splice(i).join('/');
+					// return ls.join('/') + '/' + ls2.splice(i).join('/');
+					return ls.concat(ls2.splice(i)).join('/');
 				}
 				return ls2.splice(i).join('/');
 			}

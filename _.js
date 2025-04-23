@@ -25,4 +25,6 @@ fs.writeFileSync(
 	`${__dirname}/out/${pkg.name}/package.json`, JSON.stringify(pkg, null, 2),
 );
 
-fs.unlinkSync(`${__dirname}/out/${pkg.name}/package-lock.json`);
+var pkg_lock = `${__dirname}/out/${pkg.name}/package-lock.json`;
+if (fs.existsSync(pkg_lock))
+	fs.unlinkSync(pkg_lock);

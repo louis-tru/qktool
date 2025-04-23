@@ -51,7 +51,7 @@ if (isWeb) {
 		try { 
 			return JSON.parse(val);
 		} catch(e) {
-			console.warn('encark#storage#paese_value', e);
+			console.warn('qktool#storage#paese_value', e);
 		}
 		return null;
 	};
