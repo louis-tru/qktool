@@ -213,6 +213,10 @@ isNode ? process.nextTick: function(cb, ...args): void {
 	}
 };
 
+export function sleep<T = number>(time: number, defaultValue?: T): Promise<T> {
+	return new Promise((ok, err)=>setTimeout(()=>ok((defaultValue || 0) as any), time));
+}
+
 function unrealized(): any {
 	throw new Error('Unrealized function');
 }

@@ -43,12 +43,10 @@ export function isAsync(func: any): boolean {
 
 function clone_object(new_obj: any, obj: any): any {
 	for (var name of Object.getOwnPropertyNames(obj)) {
-		var property = <PropertyDescriptor>Object.getOwnPropertyDescriptor(obj, name);
+		var property = Object.getOwnPropertyDescriptor(obj, name)!;
 		if (property.writable) {
 			new_obj[name] = clone(property.value);
-		}//else {
-			// Object.defineProperty(new_obj, name, property);
-		//}
+		}
 	}
 	return new_obj;
 }
@@ -365,13 +363,6 @@ export function assert(condition: any, code?: number | ErrorNewArg, desc?: strin
 		}
 	}
 	throw err;
-}
-
-/**
- * @func sleep()
- */
-export function sleep<T = number>(time: number, defaultValue?: T): Promise<T> {
-	return new Promise((ok, err)=>setTimeout(()=>ok((defaultValue || 0) as any), time));
 }
 
 export function timeout<T>(promise: Promise<T> | T, time: number, timeoutAfterErrorHandle?: (e: Error)=>void): Promise<T> {

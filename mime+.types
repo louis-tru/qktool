@@ -47,3 +47,6 @@ application/xml			xml xsl vx
 application/javascript-xml	jsx
 
 text/xml    plist
+
+application/typescript				ts
+application/typescript-xml		tsx
