@@ -213,7 +213,7 @@ isNode ? process.nextTick: function(cb, ...args): void {
 	}
 };
 
-export function sleep<T = number>(time: number, defaultValue?: T): Promise<T> {
+function sleep<T = number>(time: number, defaultValue?: T): Promise<T> {
 	return new Promise((ok, err)=>setTimeout(()=>ok((defaultValue || 0) as any), time));
 }
 
@@ -230,6 +230,7 @@ export default {
 	hashCode: Object.hashCode,
 	hash: hash,
 	nextTick: nextTick,
+	sleep,
 	platform: platform,
 	isNode: isNode,
 	isQuark: isQuark,

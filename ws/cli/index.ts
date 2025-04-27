@@ -172,7 +172,7 @@ export class WSClient extends Notification implements conv.MessageHandle {
 
 			if (cb) {
 				self.m_conv.sendFormatData(Object.assign(r, {
-					service: self.m_conv._service(self.name),
+					service: self.name,
 					type: Types.T_CALLBACK, 
 					cb: cb,
 				})).catch(console.warn); // callback
@@ -225,7 +225,7 @@ export class WSClient extends Notification implements conv.MessageHandle {
 				timeout: timeout ? timeout + Date.now(): 0,
 				ok: (e: any)=>(calls.delete(id),resolve(e)),
 				err: (e: Error)=>(calls.delete(id),reject(e)),
-				service: this.m_conv._service(this.name),
+				service: this.name,
 				type: type,
 				name: name,
 				data: data,
@@ -249,7 +249,7 @@ export class WSClient extends Notification implements conv.MessageHandle {
 		await this._send({
 			ok: ()=>{},
 			err: ()=>{},
-			service: this.conv._service(this.name),
+			service: this.name,
 			type: Types.T_CALL,
 			name: method,
 			data: data,

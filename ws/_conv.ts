@@ -91,10 +91,6 @@ export abstract class ConversationBasic {
 		return this.m_isOpen;
 	}
 
-	_service(service: string) {
-		return this.m_services_count == 1 ? undefined: service;
-	}
-
 	get handles() {
 		return {...this.m_handles};
 	}
