@@ -1,6 +1,6 @@
 {
 	"name": "qktool",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "This is a collection of tools, independent of any other libraries",
 	"main": "index.js",
 	"types": "index",
