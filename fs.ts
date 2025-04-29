@@ -34,7 +34,7 @@ import * as fs from 'fs';
 import path2 from './path';
 export * from 'fs';
 
-const fb = path2.fallbackPath;
+const fb = path2.classicPath;
 type NoParamCallback = fs.NoParamCallback;
 
 type CancelParamCallback = (err: NodeJS.ErrnoException | null, r?: boolean) => void;

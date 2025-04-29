@@ -28,21 +28,26 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-import _pkgutil from './_pkgutil';
-import _util, {_process} from './_util';
+import * as _util from './_util';
 import * as _common from './_common';
 import {EventNoticer, Event} from './event';
 
+const {_process} = _util;
+
 export default {
-	..._util, ..._common,
+	..._util.default, ..._common,
 	get id() { return _common.getId() },
-	get options() { return _pkgutil.options },
-	get config() { return _pkgutil.config },
-	set config(cfg: any) { _pkgutil.config = cfg },
-	get debug() { return _pkgutil.debug },
+	get options() { return _util.default.options },
+	get config() { return _util.getConfig() },
+	set config(cfg: any) { _util.setConfig(cfg) },
+	get debug() { return _util.default.debug },
 	// events
-	get onBeforeExit(): EventNoticer<Event<any, number>> { return _process.getNoticer('BeforeExit') },
-	get onExit(): EventNoticer<Event<any, number>> { return _process.getNoticer('Exit') },
-	get onUncaughtException(): EventNoticer<Event<any, Error>> { return _process.getNoticer('UncaughtException') },
-	get onUnhandledRejection(): EventNoticer<Event<any, {reason: Error, promise: Promise<any>}>> { return _process.getNoticer('UnhandledRejection') },
+	get onBeforeExit(): EventNoticer<Event<any, number>> {
+		return _process.getNoticer('BeforeExit') },
+	get onExit(): EventNoticer<Event<any, number>> {
+		return _process.getNoticer('Exit') },
+	get onUncaughtException(): EventNoticer<Event<any, Error>> {
+		return _process.getNoticer('UncaughtException') },
+	get onUnhandledRejection(): EventNoticer<Event<any, {reason: Error, promise: Promise<any>}>> {
+		return _process.getNoticer('UnhandledRejection') },
 }

@@ -34,7 +34,7 @@ import { Notification } from './event';
 import path2 from './path';
 
 const { isNode, isQuark, isWeb } = utils;
-const fb = path2.fallbackPath;
+const fb = path2.classicPath;
 
 if (isQuark) {
 	var fs = __binding__('_fs');

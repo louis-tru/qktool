@@ -28,10 +28,9 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import _path from './_path';
-import _pkgutil from './_pkgutil';
+import * as _util from './_util';
 
-const isWeb = typeof globalThis.window == 'object';
+const isWeb = _util.default.isWeb;
 
 function split_path(self: any) {
 	if (self._is_split) return;
@@ -58,7 +57,7 @@ function split_path(self: any) {
 			val = value;
 		}
 	}
-	self._value = _pkgutil.resolve(val);
+	self._value = _util.formatPath(val);
 }
 
 function parse_base_ext_name(self: any) {
@@ -370,24 +369,30 @@ function get_path(path?: string): URL {
 
 export default {
 
-	..._path,
+	executable: _util.default.unrealized as ()=>string,
+	documents: _util.default.unrealized as (path?: string)=>string,
+	temp: _util.default.unrealized as (path?: string)=>string,
+	resources: _util.default.unrealized as (path?: string)=>string,
+	chdir: _util.chdir,
+	cwd: _util.cwd,
+	normalizePath: _util.cwd,
 
 	URL: URL,
 
 	/** 
 	 * @func isAbsolute(path) is absolute path
 	 */
-	isAbsolute: _pkgutil.isAbsolute, // func
+	isAbsolute: _util.isAbsolute, // func
 	
 	/**
 	 * @func resolve(path) resolve path 
 	 */
-	resolve: _pkgutil.resolve, // func
+	resolve: _util.formatPath, // func
 
 	/**
-	 * @func fallbackPath()
+	 * @func classicPath()
 	 */
-	fallbackPath: _pkgutil.fallbackPath,
+	classicPath: _util.classicPath,
 
 	/**
 	 * full filename
