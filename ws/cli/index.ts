@@ -236,14 +236,14 @@ export class WSClient extends Notification implements conv.MessageHandle {
 	}
 
 	/**
-	 * @func call(method, data, timeout)
+	 * @func call(method,data,timeout)
 	 */
 	call<T = any>(method: string, data?: any, timeout = METHOD_CALL_TIMEOUT, sender?: string) {
 		return this._call<T>(Types.T_CALL, method, data, timeout, sender);
 	}
 
 	/**
-	 * @func send(method, data, sender) method call
+	 * @func send(method,data,sender) method call
 	 */
 	async send(method: string, data?: any, sender?: string) {
 		await this._send({

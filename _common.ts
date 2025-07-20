@@ -87,7 +87,7 @@ export function clone(obj: any): any {
 }
 
 /**
- * @func extend(obj, extd)
+ * @func extend(obj,extd)
  */
 export function extend(obj: any, extd: any, end: any): any {
 	if (extd.__proto__ && extd.__proto__ !== end)
@@ -142,7 +142,7 @@ async function scopeLockDequeue(mutex: any): Promise<void> {
 }
 
 /**
- * @func scopeLock(mutex, cb)
+ * @func scopeLock(mutex,cb)
  */
 export function scopeLock<R>(mutex: any, cb: ()=>Promise<R>|R): Promise<R> {
 	assert(mutex, 'Bad argument');
@@ -158,14 +158,14 @@ export function scopeLock<R>(mutex: any, cb: ()=>Promise<R>|R): Promise<R> {
 }
 
 /**
- * @func isScopeLocked(mutex, cb)
+ * @func isScopeLocked(mutex,cb)
  */
 export function isScopeLocked(mutex: any) {
 	return scopeLockQueue.has(mutex);
 }
 
 /**
- * @fun get(name[,self]) # get object value by name
+ * @fun get(name,self?) # get object value by name
  * @arg name {String} 
  * @arg [self] {Object}
  * @ret {Object}
