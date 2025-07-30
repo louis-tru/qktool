@@ -31,13 +31,13 @@
 import errno from './errno';
 import utils from './util';
 import _buffer from './_buffer';
-import codec from './_codec';
+import {Buffer,from} from './buffer';
 
 const TypedArray = (<any>(Uint8Array.prototype)).__proto__.constructor;
 
-type Bytes = Uint8Array | Uint8ClampedArray | ArrayLike<number>;
+type Bytes = ArrayLike<number>;
 
-var // FLAGS
+const // FLAGS
 	F_EOF = 0,
 	F_STRING = 1, // utf8 encoded
 	F_BUFFER = 2,
@@ -85,9 +85,9 @@ function write_buffer(data: Bytes, out: Out): number {
 		254 - 65535 : 3,	254|len|len|data...
 		65536 -     : 9,	255|len|len|len|len|len|len|len|len|data...
 	*/
-	var dataLength = data.length;
-	var secondByte = dataLength;
-	var headerLength = 1;
+	let dataLength = data.length;
+	let secondByte = dataLength;
+	let headerLength = 1;
 
 	if (dataLength > 65535) { // 65536 - *
 		headerLength += 8;
@@ -97,8 +97,8 @@ function write_buffer(data: Bytes, out: Out): number {
 		secondByte = 254;
 	}
 	// write header:
-	var index = 0;
-	var header = new Uint8Array(headerLength);
+	let index = 0;
+	let header = new Uint8Array(headerLength);
 	header[index] = secondByte; index++; // secondByte
 
 	// write data length header:
@@ -108,8 +108,8 @@ function write_buffer(data: Bytes, out: Out): number {
 			header[index] = dataLength % 256; index++;
 			break;
 		case 255:
-			var l = dataLength;
-			for (var i = index + 7; i >= index; i--) {
+			let l = dataLength;
+			for (let i = index + 7; i >= index; i--) {
 				header[i] = l & 0xff;
 				l >>= 8;
 			}
@@ -122,14 +122,14 @@ function write_buffer(data: Bytes, out: Out): number {
 	return headerLength + dataLength;
 }
 
-function write_num(o: number, api: string, len: number, out: Out) {
-	var b = new Uint8Array(len);
-	(<any>_buffer)[api](b, o);
+function write_num(offset: number, api: string, len: number, out: Out) {
+	let b = new Uint8Array(len);
+	(_buffer as any)[api](b, offset);
 	out.push(b);
 	return len;
 }
 
-function isFloat32(o: number) {
+function isFloat32(offset: number) {
 	// float32: S 08-     EEEEEEEE 23>                                  DDDDDDD DDDDDDDD DDDDDDDD
 	// float64: S 11- EEE EEEEEEEE 52- DDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD DDDDDDDD
 	return false;
@@ -180,7 +180,7 @@ function write_bigint(o: bigint, out: Out) {
 	} else {
 		write_flag(F_BIGINT, out);
 	}
-	var bytes: number[] = [];
+	let bytes: number[] = [];
 	_buffer.writeBigIntLE(bytes, o);
 	return 1 + write_buffer(bytes.reverse(), out);
 }
@@ -189,8 +189,8 @@ function write_array(o: any[], out: Out, set: Setr) {
 	if (set.has(o))
 		return write_flag(F_NULL, out);
 	set.add(o);
-	var l = 0;
-	for (var val of o) {
+	let l = 0;
+	for (let val of o) {
 		l += serialize(val, out, set);
 	}
 	set.delete(o);
@@ -201,12 +201,12 @@ function write_object(o: any, out: Out, set: Setr) {
 	if (set.has(o))
 		return write_flag(F_NULL, out);
 	set.add(o);
-	var l = 0;
+	let l = 0;
 	if (o.toJSON) {
 		l = serialize(o.toJSON(), out, set);
 	} else {
 		l += write_flag(F_OBJECT, out);	
-		for (var key in o) {
+		for (let key in o) {
 			l += serialize(key, out, set);
 			l += serialize(o[key], out, set);
 		}
@@ -219,7 +219,7 @@ function write_object(o: any, out: Out, set: Setr) {
 function serialize(o: any, out: Out, set: Setr): number {
 	switch (typeof o) {
 		case 'string':
-			return write_flag(F_STRING, out) + write_buffer(codec.encodeUTF8(o), out);
+			return write_flag(F_STRING, out) + write_buffer(from(o), out);
 		case 'number':
 			if (Number.isNaN(o)) {
 				return write_flag(F_NAN, out);
@@ -253,26 +253,26 @@ function serialize(o: any, out: Out, set: Setr): number {
 		case 'undefined':
 			return write_flag(F_UNDEFAULT, out);
 		default: // default use string
-			return write_flag(F_STRING, out) + write_buffer(codec.encodeUTF8(String(o)), out);
+			return write_flag(F_STRING, out) + write_buffer(from(String(o)), out);
 	}
 }
 
-function binaryify(o: any): Uint8Array {
-	var output: Out = [];
-	var byteLen = serialize(o, output, new Set<string>());
-	var offset = 0;
-	var rev = new Uint8Array(byteLen);
-	for (var bytes of output) {
+function binaryify(o: any): Buffer {
+	let output: Out = [];
+	let byteLen = serialize(o, output, new Set<string>());
+	let offset = 0;
+	let rev = new Uint8Array(byteLen);
+	for (let bytes of output) {
 		rev.set(bytes, offset);
 		offset += bytes.length;
 	}
-	return rev;
+	return from(rev);
 }
 
 // parse binary:
 
 class Binary {
-	d: Uint8Array;
+	d: Buffer;
 	index: number;
 	get value() {
 		return this.d[this.index];
@@ -281,11 +281,11 @@ class Binary {
 		return this.d.length;
 	}
 	constructor(buf: Uint8Array) {
-		this.d = buf;
+		this.d = from(buf);
 		this.index = 0;
 	}
 	next() {
-		var v = this.d[this.index];
+		let v = this.d[this.index];
 		this.index++;
 		return v;
 	}
@@ -302,12 +302,12 @@ function assert(cond: any) {
 }
 
 function read_object(bin: Binary) {
-	var rev: Dict = {};
+	let rev: Dict = {};
 	do {
 		if (bin.has(F_OBJECT_END)) {
 			bin.next(); break;
 		} else {
-			var key = read_next(bin);
+			let key = read_next(bin);
 			rev[key] = read_next(bin);
 		}
 	} while(true);
@@ -315,7 +315,7 @@ function read_object(bin: Binary) {
 }
 
 function read_array(bin: Binary): any[] {
-	var rev: any[] = [];
+	let rev: any[] = [];
 	do {
 		if (bin.has(F_ARRAY_END)) {
 			bin.next();
@@ -327,13 +327,13 @@ function read_array(bin: Binary): any[] {
 	return rev;
 }
 
-function read_buffer(bin: Binary): Uint8Array {
+function read_buffer(bin: Binary): Buffer {
 	/*
 		0   - 253   : 1,	len|data...
 		254 - 65536 : 3,	254|len|len|data...
 		65537 -     : 9,	255|len|len|len|len|len|len|len|len|data...
 	*/
-	var dataLen = bin.next(), end;
+	let dataLen = bin.next(), end;
 	if (dataLen < 254) { // 0 - 253 byte length
 		end = bin.index + dataLen;
 	} else if (dataLen < 255) { // 254 - 65535 byte length
@@ -343,33 +343,27 @@ function read_buffer(bin: Binary): Uint8Array {
 	} else { // 65536 - byte length
 		assert(bin.length > bin.index + 8);
 		dataLen = 0;
-		for (var i = 0; i < 8; i++) {
+		for (let i = 0; i < 8; i++) {
 			dataLen *= 256;
 			dataLen |= bin.next();
 		}
 		end = bin.index + dataLen;
 	}
 	assert(bin.length >= end);
-	var d = bin.d.slice(bin.index, end);
+	let d = bin.d.slice(bin.index, end);
 	bin.index = end;
 	return d;
 }
 
-function read_num(bin: Binary, api: string, len: number) {
-	var r = (<any>_buffer)[api](bin.d, bin.index);
-	bin.index += len;
-	return r;
-}
-
 function read_bigint(bin: Binary): bigint | number {
 	assert(bin.length > bin.index + 8);
-	var bytes = read_buffer(bin);
+	let bytes = read_buffer(bin);
 	if (  _buffer.isBigInt ) {
 		return _buffer.readBigUIntBE(bytes, 0, bytes.length);
 	} else { // not support bigint
 		console.log('Not support bigint');
-		var num = 0;
-		for (var byte of bytes) {
+		let num = 0;
+		for (let byte of bytes) {
 			num *= 256;
 			num += byte;
 		}
@@ -378,31 +372,42 @@ function read_bigint(bin: Binary): bigint | number {
 }
 
 function read_next(bin: Binary): any {
+	let offset = bin.index;
 	switch (bin.next()) {
 		case F_STRING:
-			return codec.decodeUTF8(read_buffer(bin));
+			return read_buffer(bin).toString('utf8');
 		case F_BUFFER:
 			return read_buffer(bin);
 		case F_INT_8:
-			return read_num(bin, 'readInt8', 1);
+			bin.index += 1;
+			return _buffer.readInt8(bin.d, offset);
 		case F_UINT_8:
-			return read_num(bin, 'readUInt8', 1);
+			bin.index += 1;
+			return _buffer.readUInt8(bin.d, offset);
 		case F_INT_16:
-			return read_num(bin, 'readInt16BE', 2);
+			bin.index += 2;
+			return _buffer.readInt16BE(bin.d, offset);
 		case F_UINT_16:
-			return read_num(bin, 'readUInt16BE', 2);
+			bin.index += 2;
+			return _buffer.readUInt16BE(bin.d, offset);
 		case F_INT_32:
-			return read_num(bin, 'readInt32BE', 4);
+			bin.index += 4;
+			return _buffer.readInt32BE(bin.d, offset);
 		case F_UINT_32:
-			return read_num(bin, 'readUInt32BE', 4);
+			bin.index += 4;
+			return _buffer.readUInt32BE(bin.d, offset);
 		case F_INT_64:
-			return read_num(bin, 'readBigInt64BE_Compatible', 8);
+			bin.index += 8;
+			_buffer.readBigInt64BE_Compatible(bin.d, offset);
 		case F_UINT_64:
-			return read_num(bin, 'readBigUInt64BE_Compatible', 8);
+			bin.index += 8;
+			_buffer.readBigUInt64BE_Compatible(bin.d, offset);
 		case F_FLOAT_NUM_32:
-			return read_num(bin, 'readFloatBE', 4);
+			bin.index += 4;
+			return _buffer.readFloatBE(bin.d, offset);
 		case F_FLOAT_NUM_64:
-			return read_num(bin, 'readDoubleBE', 8);
+			bin.index += 8;
+			return _buffer.readDoubleBE(bin.d, offset);
 		case F_BIGINT:
 			return read_bigint(bin);
 		case F_BIGINT_NEGATIVE:
@@ -412,7 +417,8 @@ function read_next(bin: Binary): any {
 		case F_FALSE:
 			return false;
 		case F_DATE:
-			return new Date(read_num(bin, 'readUInt48BE', 6));
+			bin.index += 6;
+			return new Date(_buffer.readUInt48BE(bin.d, offset));
 		case F_OBJECT:
 			return read_object(bin);
 		case F_ARRAY:
@@ -436,7 +442,33 @@ function parse(buf: Uint8Array) {
 	return read_next(new Binary(buf));
 }
 
+/**
+ * @default
+*/
 export default {
+	/**
+	 * @method binaryify(o): Buffer
+	 * Convert a JSON object to binary format.
+	 * @param {any} o - The object to convert.
+	 * @return {Buffer} - The binary representation of the object.
+	 * @example
+	 * const jsonb = require('quark/jsonb');
+	 * const binaryData = jsonb.binaryify({ key: 'value' });
+	 * console.log(binaryData); // Outputs the binary data.
+	 * @throws {Error} - If the object cannot be serialized.
+	*/
 	binaryify,
+
+	/**
+	 * @method parse(buf): any
+	 * Parse a binary buffer back to a JSON object.
+	 * @param {Uint8Array} buf - The binary data to parse.
+	 * @return {any} - The parsed JSON object.
+	 * @example
+	 * const jsonb = require('quark/jsonb');
+	 * const jsonData = jsonb.parse(binaryData);
+	 * console.log(jsonData); // Outputs the original JSON object.
+	 * @throws {Error} - If the buffer cannot be parsed.
+	*/
 	parse,
 };

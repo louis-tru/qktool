@@ -30,7 +30,7 @@
 
 import utils from './util';
 import _codec from './_codec';
-import _IBuffer, {ERR_INVALID_ARG_TYPE, ERR_OUT_OF_RANGE} from './_buffer';
+import _buffer, {ERR_INVALID_ARG_TYPE, ERR_OUT_OF_RANGE} from './_buffer';
 
 const MathFloor = Math.floor;
 const INTERFACE_IBuffer_TYPE = -12378;
@@ -121,6 +121,17 @@ export interface IBuffer extends Uint8Array {
 	readDoubleBE(offset?: number): number;
 	readBigUIntBE(offset?: number, end?: number): bigint;
 	readBigUIntLE(offset?: number, end?: number): bigint;
+	// readUIntLE(offset: number, byteLength: number): number; // read le
+	// readIntLE(offset: number, byteLength: number): number;
+	// readUInt16LE(offset?: number): number;
+	// readUInt32LE(offset?: number): number;
+	// readInt8(offset?: number): number;
+	// readInt16LE(offset?: number): number;
+	// readInt32LE(offset?: number): number;
+	// readFloatLE(offset?: number): number;
+	// readDoubleLE(offset?: number): number;
+	// readBigUInt64LE(offset?: number): bigint;
+	// readBigInt64LE(offset?: number): bigint;
 	// write
 	writeInt8(value: number, offset?: number): number;
 	writeUInt8(value: number, offset?: number): number;
@@ -137,17 +148,6 @@ export interface IBuffer extends Uint8Array {
 	writeFloatBE(value: number, offset?: number): number;
 	writeDoubleBE(value: number, offset?: number): number;
 	writeBigIntLE(bigint: bigint, offset?: number): number;
-	// readUIntLE(offset: number, byteLength: number): number; // read le
-	// readIntLE(offset: number, byteLength: number): number;
-	// readUInt16LE(offset?: number): number;
-	// readUInt32LE(offset?: number): number;
-	// readInt8(offset?: number): number;
-	// readInt16LE(offset?: number): number;
-	// readInt32LE(offset?: number): number;
-	// readFloatLE(offset?: number): number;
-	// readDoubleLE(offset?: number): number;
-	// readBigUInt64LE(offset?: number): bigint;
-	// readBigInt64LE(offset?: number): bigint;
 	// writeUInt16LE(value: number, offset: number, noAssert?: boolean): number; // write le
 	// writeUInt32LE(value: number, offset: number, noAssert?: boolean): number;
 	// writeInt16LE(value: number, offset: number, noAssert?: boolean): number;
@@ -497,106 +497,106 @@ export class IBufferIMPL extends Uint8Array implements IBuffer {
 		return compare(this, b) === 0
 	}
 
-	readInt8(offset = 0) {
-		return _IBuffer.readInt8(this, offset);
+	readInt8(offset?: number) {
+		return _buffer.readInt8(this, offset);
 	}
-	readUInt8(offset = 0) {
-		return _IBuffer.readUInt8(this, offset);
+	readUInt8(offset?: number) {
+		return _buffer.readUInt8(this, offset);
 	}
-	readInt16BE(offset = 0) {
-		return _IBuffer.readInt16BE(this, offset);
+	readInt16BE(offset?: number) {
+		return _buffer.readInt16BE(this, offset);
 	}
-	readUInt16BE(offset = 0) {
-		return _IBuffer.readUInt16BE(this, offset);
+	readUInt16BE(offset?: number) {
+		return _buffer.readUInt16BE(this, offset);
 	}
-	readInt32BE(offset = 0) {
-		return _IBuffer.readInt32BE(this, offset);
+	readInt32BE(offset?: number) {
+		return _buffer.readInt32BE(this, offset);
 	}
-	readUInt32BE(offset = 0) {
-		return _IBuffer.readUInt32BE(this, offset);
+	readUInt32BE(offset?: number) {
+		return _buffer.readUInt32BE(this, offset);
 	}
-	readInt40BE(offset = 0) {
-		return _IBuffer.readInt40BE(this, offset);
+	readInt40BE(offset?: number) {
+		return _buffer.readInt40BE(this, offset);
 	}
-	readUInt40BE(offset = 0) {
-		return _IBuffer.readUInt40BE(this, offset);
+	readUInt40BE(offset?: number) {
+		return _buffer.readUInt40BE(this, offset);
 	}
-	readInt48BE(offset = 0) {
-		return _IBuffer.readInt48BE(this, offset);
+	readInt48BE(offset?: number) {
+		return _buffer.readInt48BE(this, offset);
 	}
-	readUInt48BE(offset = 0) {
-		return _IBuffer.readUInt48BE(this, offset);
+	readUInt48BE(offset?: number) {
+		return _buffer.readUInt48BE(this, offset);
 	}
-	readBigInt64BE(offset = 0) {
-		return _IBuffer.readBigInt64BE(this, offset);
+	readBigInt64BE(offset?: number) {
+		return _buffer.readBigInt64BE(this, offset);
 	}
-	readBigUInt64BE(offset = 0) {
-		return _IBuffer.readBigUInt64BE(this, offset);
+	readBigUInt64BE(offset?: number) {
+		return _buffer.readBigUInt64BE(this, offset);
 	}
-	readIntBE(offset = 0, byteLength = 4) {
-		return _IBuffer.readIntBE(this, offset, byteLength);
+	readIntBE(offset?: number, byteLength?: number) {
+		return _buffer.readIntBE(this, offset, byteLength);
 	}
-	readUIntBE(offset = 0, byteLength = 4) {
-		return _IBuffer.readUIntBE(this, offset, byteLength);
+	readUIntBE(offset?: number, byteLength?: number) {
+		return _buffer.readUIntBE(this, offset, byteLength);
 	}
-	readFloatBE(offset: number = 0) {
-		return _IBuffer.readFloatBE(this, offset);
+	readFloatBE(offset?: number) {
+		return _buffer.readFloatBE(this, offset);
 	}
-	readDoubleBE(offset: number = 0) {
-		return _IBuffer.readDoubleBE(this, offset);
+	readDoubleBE(offset?: number) {
+		return _buffer.readDoubleBE(this, offset);
 	}
-	readBigUIntBE(offset: number = 0, end: number = this.length) {
-		return _IBuffer.readBigUIntBE(this, offset, end);
+	readBigUIntBE(offset?: number, end?: number) {
+		return _buffer.readBigUIntBE(this, offset, end);
 	}
-	readBigUIntLE(offset: number = 0, end: number = this.length) {
-		return _IBuffer.readBigUIntLE(this, offset, end);
+	readBigUIntLE(offset?: number, end?: number) {
+		return _buffer.readBigUIntLE(this, offset, end);
 	}
 	// write
-	writeInt8(value: number, offset = 0) {
-		return _IBuffer.writeInt8(this, value, offset);
+	writeInt8(value: number, offset?: number) {
+		return _buffer.writeInt8(this, value, offset);
 	}
-	writeUInt8(value: number, offset = 0) {
-		return _IBuffer.writeUInt8(this, value, offset);
+	writeUInt8(value: number, offset?: number) {
+		return _buffer.writeUInt8(this, value, offset);
 	}
-	writeInt16BE(value: number, offset = 0) {
-		return _IBuffer.writeInt16BE(this, value, offset);
+	writeInt16BE(value: number, offset?: number) {
+		return _buffer.writeInt16BE(this, value, offset);
 	}
-	writeUInt16BE(value: number, offset = 0) {
-		return _IBuffer.writeUInt16BE(this, value, offset);
+	writeUInt16BE(value: number, offset?: number) {
+		return _buffer.writeUInt16BE(this, value, offset);
 	}
-	writeInt32BE(value: number, offset = 0) {
-		return _IBuffer.writeInt32BE(this, value, offset);
+	writeInt32BE(value: number, offset?: number) {
+		return _buffer.writeInt32BE(this, value, offset);
 	}
-	writeUInt32BE(value: number, offset = 0) {
-		return _IBuffer.writeUInt32BE(this, value, offset);
+	writeUInt32BE(value: number, offset?: number) {
+		return _buffer.writeUInt32BE(this, value, offset);
 	}
-	writeInt48BE(value: number, offset = 0) {
-		return _IBuffer.writeInt48BE(this, value, offset);
+	writeInt48BE(value: number, offset?: number) {
+		return _buffer.writeInt48BE(this, value, offset);
 	}
-	writeUInt48BE(value: number, offset = 0) {
-		return _IBuffer.writeUInt48BE(this, value, offset);
+	writeUInt48BE(value: number, offset?: number) {
+		return _buffer.writeUInt48BE(this, value, offset);
 	}
-	writeBigInt64BE(value: bigint, offset = 0) {
-		return _IBuffer.writeBigInt64BE(this, value, offset);
+	writeBigInt64BE(value: bigint, offset?: number) {
+		return _buffer.writeBigInt64BE(this, value, offset);
 	}
-	writeBigUInt64BE(value: bigint, offset = 0) {
-		return _IBuffer.writeBigUInt64BE(this, value, offset);
+	writeBigUInt64BE(value: bigint, offset?: number) {
+		return _buffer.writeBigUInt64BE(this, value, offset);
 	}
-	writeIntBE(value: number, offset = 0, byteLength = 4) {
-		return _IBuffer.writeIntBE(this, value, offset, byteLength);
+	writeIntBE(value: number, offset?: number, byteLength?: number) {
+		return _buffer.writeIntBE(this, value, offset, byteLength);
 	}
-	writeUIntBE(value: number, offset = 0, byteLength = 4) {
-		return _IBuffer.writeUIntBE(this, value, offset, byteLength);
+	writeUIntBE(value: number, offset?: number, byteLength?: number) {
+		return _buffer.writeUIntBE(this, value, offset, byteLength);
 	}
-	writeFloatBE(value: number, offset = 0) {
-		return _IBuffer.writeFloatBE(this, value, offset);
+	writeFloatBE(value: number, offset?: number) {
+		return _buffer.writeFloatBE(this, value, offset);
 	}
-	writeDoubleBE(value: number, offset = 0) {
-		return _IBuffer.writeDoubleBE(this, value, offset);
+	writeDoubleBE(value: number, offset?: number) {
+		return _buffer.writeDoubleBE(this, value, offset);
 	}
-	writeBigIntLE(bigint: bigint, offset = 0) {
+	writeBigIntLE(bigint: bigint, offset?: number) {
 		var arr: number[] = [];
-		var l = _IBuffer.writeBigIntLE(arr, bigint);
+		var l = _buffer.writeBigIntLE(arr, bigint);
 		this.set(arr, offset);
 		return l;
 	}
@@ -611,6 +611,8 @@ Object.defineProperty(IBufferIMPL.prototype, '__INTERFACE_IBuffer_TYPE__', {
 	value: INTERFACE_IBuffer_TYPE,
 	writable: false,
 });
+
+export {from,byteLength,concat,alloc};
 
 export default {
 	isHexString: _codec.isHexString,
