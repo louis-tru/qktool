@@ -157,8 +157,6 @@ export function spawn(cmd: string, args: string[] = [], options: SpawnOptions = 
 			var index, prev = 0;
 			var handle = name == 'stdout' ? on_data_before: on_error_before;
 
-			// console.log('parse_data', (data + ''), (data + '').indexOf('\n'), data.indexOf('\n'), 'ch', !!ch);
-
 			while ( (index = data.indexOf('\n', prev)) != -1 ) {
 				handle(Buffer.concat([output, data.slice(prev, index)]));
 				prev = index + 1;
@@ -187,16 +185,8 @@ export function spawn(cmd: string, args: string[] = [], options: SpawnOptions = 
 			}
 		}
 
-		// if (promise)
-		// 	promise.process = ch;
-
-		ch.stdout.on('data', function(e: Buffer) {
-			parse_data(e, 'stdout');
-		});
-
-		ch.stderr.on('data', function(e: Buffer) {
-			parse_data(e, 'stderr');
-		});
+		ch.stdout.on('data', e=>parse_data(e, 'stdout'));
+		ch.stderr.on('data', e=>parse_data(e, 'stderr'));
 
 		ch.on('error', (e: Error)=>on_end(e));
 		ch.on('exit', (e: number)=>on_end.setTimeout(0, null, e));
@@ -204,11 +194,9 @@ export function spawn(cmd: string, args: string[] = [], options: SpawnOptions = 
 		if (stdout) {
 			ch.stdout.pipe(stdout);
 		}
-
 		if (stderr) {
 			ch.stderr.pipe(stderr);
 		}
-
 		if (stdin) {
 			stdin.pipe(ch.stdin);
 		}
