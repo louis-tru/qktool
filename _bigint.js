@@ -28,10 +28,10 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-var checkInt = null;
+let checkInt = null;
 
 function _readBigUIntBE(self, offset, end) {
-	var num = 0n;
+	let num = 0n;
 	while (offset < end) {
 		num <<= 8n;
 		num |= BigInt(self[offset]);
@@ -41,7 +41,7 @@ function _readBigUIntBE(self, offset, end) {
 }
 
 function _readBigUIntLE(self, offset, end) {
-	var num = 0n;
+	let num = 0n;
 	while (offset < end) {
 		end--;
 		num <<= 8n;
@@ -79,7 +79,7 @@ function _readBigUInt64BE(self, offset) {
 }
 
 function _writeBigIntLE(bytes, bigint) {
-	var i = 0;
+	let i = 0;
 	do {
 		bytes.push(Number(bigint & 0xffn));
 		bigint >>= 8n;
@@ -120,9 +120,7 @@ function _writeBigUInt64BE(self, value, offset = 0) {
 }
 
 module.exports = {
-	_set(_checkInt) {
-		checkInt = _checkInt;
-	},
+	_set(_checkInt) { checkInt = _checkInt },
 	_readBigUIntBE,
 	_readBigUIntLE,
 	_readBigInt64BE,

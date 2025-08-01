@@ -220,7 +220,7 @@ export class WSService extends Service implements conv.MessageHandle {
 	}
 
 	/**
-	 * @func call(method, data)
+	 * @func call(method,data)
 	 * @async
 	 */
 	call<T = any>(method: string, data?: any, timeout = METHOD_CALL_TIMEOUT, sender?: string) {
@@ -228,7 +228,7 @@ export class WSService extends Service implements conv.MessageHandle {
 	}
 
 	/**
-	 * @func  trigger(event, data)
+	 * @func  trigger(event,data)
 	 * @async
 	 */
 	trigger(event: string, data?: any, sender?: string) {
@@ -236,7 +236,7 @@ export class WSService extends Service implements conv.MessageHandle {
 	}
 
 	/**
-	 * @func send(method, data, sender) method call, No response
+	 * @func send(method,data,sender) method call, No response
 	 * @async
 	 */
 	async send(method: string, data?: any, sender?: string) {

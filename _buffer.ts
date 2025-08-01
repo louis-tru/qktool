@@ -28,36 +28,9 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-// Temporary buffers to convert numbers.
-const float32Array = new Float32Array(1);
-const uInt8Float32Array = new Uint8Array(float32Array.buffer);
-const float64Array = new Float64Array(1);
-const uInt8Float64Array = new Uint8Array(float64Array.buffer);
+///////////////////////////////////////////////////////////////////////////////
+// BigInt support.
 var _bigint: any = null;
-
-var _readBigUIntBE: (self: Uint8Array, offset: number, end: number)=>bigint;
-var _readBigUIntLE: (self: Uint8Array, offset: number, end: number)=>bigint;
-var _writeBigIntLE: (bytes: number[], bigint: bigint)=>number;
-
-function readBigUIntBE(self: Uint8Array, offset: number = 0, end: number = self.length): bigint {
-	validateNumber(offset, 'offset');
-	validateNumber(end, 'end');
-	if (end > self.length)
-		boundsError(offset, self.length - (end - offset), 'end');
-	return _readBigUIntBE(self, offset, end);
-}
-
-function readBigUIntLE(self: Uint8Array, offset: number = 0, end: number = self.length): bigint {
-	validateNumber(offset, 'offset');
-	validateNumber(end, 'end');
-	if (end > self.length)
-		boundsError(offset, self.length - (end - offset), 'end');
-	return _readBigUIntLE(self, offset, end);
-}
-
-function writeBigIntLE(bytes: number[], bigint: bigint): number {
-	return _writeBigIntLE(bytes, bigint);
-}
 
 if (!!globalThis.BigInt) {
 	(function(ok: any, ...args: any[]) {
@@ -69,12 +42,35 @@ if (!!globalThis.BigInt) {
 	})(function(bigint: any) {
 		_bigint = bigint;
 		_bigint._set(checkInt);
-		_readBigUIntBE = _bigint._readBigUIntBE;
-		_readBigUIntLE = _bigint._readBigUIntLE;
-		_writeBigIntLE = _bigint._writeBigIntLE;
 	}, require);
 }
 
+function readBigUIntBE(self: Uint8Array, offset: number = 0, end: number = self.length): bigint {
+	validateNumber(offset, 'offset');
+	validateNumber(end, 'end');
+	if (end > self.length)
+		boundsError(offset, self.length - (end - offset), 'end');
+	return _bigint._readBigUIntBE(self, offset, end);
+}
+
+function readBigUIntLE(self: Uint8Array, offset: number = 0, end: number = self.length): bigint {
+	validateNumber(offset, 'offset');
+	validateNumber(end, 'end');
+	if (end > self.length)
+		boundsError(offset, self.length - (end - offset), 'end');
+	return _bigint._readBigUIntLE(self, offset, end);
+}
+
+function writeBigIntLE(bytes: number[], bigint: bigint): number {
+	return _bigint._writeBigIntLE(bytes, bigint);
+}
+///////////////////////////////////////////////////////////////////////////////
+
+// Temporary buffers to convert numbers.
+const float32Array = new Float32Array(1);
+const uInt8Float32Array = new Uint8Array(float32Array.buffer);
+const float64Array = new Float64Array(1);
+const uInt8Float64Array = new Uint8Array(float64Array.buffer);
 // Check endianness.
 float32Array[0] = -1; // 0xBF800000
 // Either it is [0, 0, 128, 191] or [191, 128, 0, 0]. It is not possible to
@@ -692,7 +688,7 @@ var writeFloatBE = bigEndian ? writeFloatForwards : writeFloatBackwards;
 var writeDoubleBE = bigEndian ? writeDoubleForwards : writeDoubleBackwards;
 
 export default {
-	get isBigInt() { return !!globalThis.BigInt },
+	get BigInt() { return (globalThis as any).BigInt },
 	// read
 	readInt8, readUInt8,
 	readInt16BE, readUInt16BE,
