@@ -58,7 +58,7 @@ export class WSConversation extends ConversationBasic  {
 	constructor(req: http.IncomingMessage, upgradeHead: any, bindServices: string) {
 		super();
 
-		var server = (req.socket as any).server as http.Server;
+		let server = (req.socket as any).server as http.Server;
 		this.server = (server as any).__wrap__ as s.Server;
 		this.request = req;
 		this.socket = req.socket;
@@ -83,7 +83,7 @@ export class WSConversation extends ConversationBasic  {
 	}
 
 	private _safeDestroyService() {
-		for (var s of Object.values(this.m_handles)) {
+		for (let s of Object.values(this.m_handles)) {
 			try {
 				(s as wsservice.WSService).destroy();
 			} catch(err) {
@@ -94,8 +94,8 @@ export class WSConversation extends ConversationBasic  {
 	}
 
 	private async _initialize(bind_services: string) {
-		var self = this;
-		var services = bind_services.split(',');
+		let self = this;
+		let services = bind_services.split(',');
 		utils.assert(services[0], 'Bind Service undefined');
 		utils.assert(!self.m_isOpen);
 
@@ -108,7 +108,8 @@ export class WSConversation extends ConversationBasic  {
 
 		self.onClose.on(function() {
 			utils.assert(self.m_isOpen);
-			console.log('WS conv close', self.m_token);
+			if (self.server.printLog)
+				console.log('WS conv close', self.m_token);
 
 			self.m_isOpen = false;
 			self._safeDestroyService();
@@ -134,9 +135,9 @@ export class WSConversation extends ConversationBasic  {
 	}
 
 	private _initializeSocket() {
-		var self = this;
-		var socket = self.socket;
-		var parser = new PacketParser();
+		let self = this;
+		let socket = self.socket;
+		let parser = new PacketParser();
 
 		socket.setNoDelay(true);
 		socket.setTimeout(0);
@@ -158,11 +159,11 @@ export class WSConversation extends ConversationBasic  {
 	}
 
 	private _handshakes() {
-		var req = this.request;
-		var key = req.headers['sec-websocket-key'];
-		var origin = <string>req.headers['sec-websocket-origin'] || '';
+		let req = this.request;
+		let key = req.headers['sec-websocket-key'];
+		let origin = <string>req.headers['sec-websocket-origin'] || '';
 		// var location = (socket.encrypted ? 'wss' : 'ws') + '://' + req.headers.host + req.url;
-		var upgrade = req.headers.upgrade;
+		let upgrade = req.headers.upgrade;
 
 		if (!upgrade || upgrade.toLowerCase() !== 'websocket') {
 			console.warn('connection invalid');
@@ -178,10 +179,10 @@ export class WSConversation extends ConversationBasic  {
 		}
 
 		// upgrade response
-		var shasum = crypto.createHash('sha1');
+		let shasum = crypto.createHash('sha1');
 		shasum.update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11');
 		key = shasum.digest('base64');
-		var headers = [
+		let headers = [
 			'HTTP/1.1 101 Switching Protocols',
 			'Upgrade: websocket',
 			'Connection: Upgrade',
@@ -200,7 +201,7 @@ export class WSConversation extends ConversationBasic  {
 	 * @return {Boolean}
 	 */
 	verifyOrigin(origin: string) {
-		var origins = this.server.origins;
+		let origins = this.server.origins;
 		if (origin == 'null') {
 			origin = '*';
 		}
@@ -209,8 +210,8 @@ export class WSConversation extends ConversationBasic  {
 		}
 		if (origin) {
 			try {
-				var parts = url.parse(origin);
-				var ok =
+				let parts = url.parse(origin);
+				let ok =
 					~origins.indexOf(parts.hostname + ':' + parts.port) ||
 					~origins.indexOf(parts.hostname + ':*') ||
 					~origins.indexOf('*:' + parts.port);
@@ -232,23 +233,26 @@ export class WSConversation extends ConversationBasic  {
 	 * @func bindService() 绑定服务
 	*/
 	protected async bindServices(services: string[]) {
-		var self = this;
-		for (var name of services) {
-			var cls = this.server.getService(name) as unknown as (typeof wsservice.WSService);
+		let self = this;
+		let printLog = self.server.printLog;
+		for (let name of services) {
+			let cls = this.server.getService(name) as unknown as (typeof wsservice.WSService);
 			utils.assert(cls, name + ' not found');
 			utils.assert(utils.equalsClass(wsservice.WSService, cls), name + ' Service type is not correct');
 			utils.assert(!(name in self.m_handles), 'Service no need to repeat binding');
 
-			var ser = new cls(self);
-			console.log('SW onRequestAuth', this.request.url, this.m_token, ser.headers, ser.params);
+			let ser = new cls(self);
+			if (printLog)
+				console.log('SW onRequestAuth', this.request.url, this.m_token, ser.headers, ser.params);
 
-			var ok = await utils.timeout(ser.onRequestAuth({ service: name, action: '' }), 2e4, (e)=>console.warn(e));
-			if (!ok && self.server.printLog)
+			let ok = await utils.timeout(ser.onRequestAuth({ service: name, action: '' }), 2e4, (e)=>console.warn(e));
+			if (!ok && printLog)
 				console.log('ILLEGAL ACCESS WSService', ser.pathname, ser.headers, ser.params);
 			utils.assert(ok, errno.ERR_REQUEST_AUTH_FAIL);
 			self.m_isGzip = ser.headers['use-gzip'] == 'on';
 
-			console.log('SER Loading', this.request.url, this.m_token);
+			if (printLog)
+				console.log('SER Loading', this.request.url, this.m_token);
 
 			await utils.timeout(ser.load(), 2e4, function(e) {
 				if (e.errno == errno.ERR_EXECUTE_TIMEOUT_AFTER[0])
@@ -264,7 +268,8 @@ export class WSConversation extends ConversationBasic  {
 			await utils.sleep(200); // TODO 在同一个node进程中同时开启多个服务时socket无法写入
 			ser._trigger('Load', {token:this.token}).catch((e: any)=>console.warn(e));
 
-			console.log('SER Load', this.request.url, this.m_token);
+			if (printLog)
+				console.log('SER Load', this.request.url, this.m_token);
 		}
 	}
 
@@ -289,7 +294,7 @@ export class WSConversation extends ConversationBasic  {
 
 	close() {
 		if (this.isOpen) {
-			var socket = this.socket;
+			let socket = this.socket;
 			socket.removeAllListeners('timeout');
 			socket.removeAllListeners('end');
 			socket.removeAllListeners('close');
@@ -301,10 +306,11 @@ export class WSConversation extends ConversationBasic  {
 					socket.end();
 				socket.destroy();
 			} catch(err) {
-				console.warn('WSConversation#close', err);
+				console.warn('WSConversation.close', err);
 			}
 			this.onClose.trigger({});
-			console.log('Hybi Conversation Close', this.m_token);
+			if (this.server.printLog)
+				console.log('Hybi Conversation Close', this.m_token);
 		}
 	}
 
