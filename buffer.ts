@@ -87,7 +87,7 @@ export function compare(a: Uint8Array, b: Uint8Array) {
 	return 0
 }
 
-export interface IBuffer extends Uint8Array {
+export interface IBuffer extends Uint8Array<ArrayBuffer> {
 	toString(encoding?: string, start?: number, end?: number): string;
 	copy(targetIBuffer: Uint8Array, targetStart?: number, sourceStart?: number, sourceEnd?: number): number;
 	clone(start?: number, end?: number): IBuffer;
@@ -295,13 +295,13 @@ const from = function(
 		}
 	} else if (value instanceof TypedArrayConstructor && (value as any).buffer) { // 
 		var bf = value as Uint8Array;
-		return new IBufferIMPL(bf.buffer, bf.byteOffset, bf.byteLength);
+		return new IBufferIMPL(bf.buffer as ArrayBuffer, bf.byteOffset, bf.byteLength);
 	} else if (value instanceof ArrayBuffer ||
 		(globalThis.SharedArrayBuffer && value instanceof SharedArrayBuffer))
 	{
-		return new IBufferIMPL(value, Number(encodingOrMapfn) || 0, Number(thisArg) || value.byteLength);
+		return new IBufferIMPL(value as ArrayBuffer, Number(encodingOrMapfn) || 0, Number(thisArg) || value.byteLength);
 	} else if (value instanceof DataView) { // 
-		return new IBufferIMPL(value.buffer, value.byteOffset, value.byteLength);
+		return new IBufferIMPL(value.buffer as ArrayBuffer, value.byteOffset, value.byteLength);
 	} else {
 			var bf = encodingOrMapfn ? 
 				Uint8Array.from(value as any, encodingOrMapfn as any, thisArg) as Uint8Array: // encodingOrMapfn unedfined is not defined
