@@ -580,11 +580,17 @@ function writeUInt48BE(self: Uint8Array, value: number, offset: number = 0) {
 }
 
 function writeBigInt64BE(self: Uint8Array, value: bigint, offset: number = 0) {
-	return _bigint._writeBigInt64BE(self, value, offset);
+	if (_bigint)
+		return _bigint._writeBigInt64BE(self, value, offset);
+	else
+		throw new Error('Not support bigint');
 }
 
 function writeBigUInt64BE(self: Uint8Array, value: bigint, offset: number = 0) {
-	return _bigint._writeBigUInt64BE(self, value, offset);
+	if (_bigint)
+		return _bigint._writeBigUInt64BE(self, value, offset);
+	else
+		throw new Error('Not support bigint');
 }
 
 function writeIntBE(self: Uint8Array, value: number, offset: number = 0, byteLength = 4) {
