@@ -65,13 +65,13 @@ function read_argv() {
 		var item = argv[i];
 		var key = null, value: any = 1;
 
-		if (item.substr(0, 2) == '--') {
-			var ls = item.substr(2).split('=');
+		if (item.substring(0, 2) == '--') {
+			var ls = item.substring(2).split('=');
 			key = ls[0].replace(/\-/mg, '_');
 			value = ls[1] || 1;
 		}
-		else if (item.substr(0, 1) == '-') {
-			key = item.substr(1).replace(/\-/mg, '_');
+		else if (item.substring(0, 1) == '-') {
+			key = item.substring(1).replace(/\-/mg, '_');
 			if ( i + 1 < argv.length ) {
 				value = argv[i+1];
 				if ( value[0] != '-' ) {
