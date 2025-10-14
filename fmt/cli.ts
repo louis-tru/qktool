@@ -28,7 +28,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-import * as path from '../path';
+import * as path from '../uri';
 import {EventNoticer, Notification} from '../event';
 import * as cli from '../ws/cli';
 import uuid from '../hash/uuid';

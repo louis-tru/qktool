@@ -29,11 +29,11 @@
  * ***** END LICENSE BLOCK ***** */
 
 import utils from '../util';
-import {URL} from '../path';
+import {URL} from '../uri';
 import fmtc from './fmtc';
 import * as wss from '../ws/service';
 import * as cli from '../ws/cli';
-import path from '../path';
+import path from '../uri';
 import errno from '../errno';
 import * as _center from './_center';
 import {ConversationBasic} from '../ws/_conv';

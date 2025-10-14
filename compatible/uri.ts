@@ -28,4 +28,4 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-export * from '../path';
+export * from '../uri';

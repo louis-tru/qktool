@@ -29,7 +29,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 import buffer,{Buffer} from './buffer';
-import {URL} from './path';
+import {URL} from './uri';
 import * as http2 from 'http2';
 import {
 	Options,Result,defaultOptions,

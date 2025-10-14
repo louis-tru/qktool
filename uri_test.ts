@@ -1,5 +1,5 @@
 
-import path from './path';
+import path from './uri';
 
 path.cwd();
 path.chdir('/');

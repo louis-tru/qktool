@@ -29,7 +29,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 import utils from '../../util';
-import url, {URL} from '../../path';
+import url, {URL} from '../../uri';
 import errno from '../../errno';
 import { Types } from '../data';
 import { ConversationBasic, KEEP_ALIVE_TIME } from '../_conv';

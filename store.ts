@@ -29,7 +29,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 import utils from './util';
-import path from './path';
+import path from './uri';
 import { Notification } from './event';
 import { Request, Options as RequestOptions, Signer, parseJSON } from'./request';
 import { WSConversation, WSClient, METHOD_CALL_TIMEOUT } from './ws/cli';

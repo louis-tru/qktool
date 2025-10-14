@@ -32,7 +32,7 @@ import utils from '../util';
 import uuid from '../hash/uuid';
 import fmtc from './fmtc';
 import {Server} from '../_server';
-import {URL} from '../path';
+import {URL} from '../uri';
 import errno from '../errno';
 import * as service from './service';
 import * as fnode from './node';

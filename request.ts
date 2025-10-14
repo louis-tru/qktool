@@ -30,7 +30,7 @@
 
 import utils from './util';
 import buffer,{IBuffer} from './buffer';
-import url from './path';
+import url from './uri';
 import errno from './errno';
 
 const { isQuark, isNode, isWeb } = utils;

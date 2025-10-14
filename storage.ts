@@ -29,7 +29,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 import util from './util';
-import url from './path';
+import url from './uri';
 import {DelayCall} from './delay_call';
 
 const { isNode, isQuark, isWeb } = util;

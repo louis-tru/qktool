@@ -29,9 +29,9 @@
  * ***** END LICENSE BLOCK ***** */
 
 import utils from './util';
-import path from './path';
+import path from './uri';
 import { Notification } from './event';
-import path2 from './path';
+import path2 from './uri';
 
 const { isNode, isQuark, isWeb } = utils;
 const fb = path2.classicPath;
