@@ -308,8 +308,8 @@ function _returnFile(self: StaticService, filename: string, stat: fs.Stats, mime
 	res.setHeader('Accept-Ranges', 'bytes');
 
 	if (range) { // return Range
-		if (range.substring(0, 6) == 'bytes=') {
-			var ranges = range.substring(0, 6).split('-');
+		if (range.startsWith('bytes=')) {
+			var ranges = range.substring(6).split('-');
 			var start_range = ranges[0] ? Number(ranges[0]) : 0;
 			var end_range = ranges[1] ? Number(ranges[1]) : stat.size - 1;
 			if (isNaN(start_range) || isNaN(end_range)) {
