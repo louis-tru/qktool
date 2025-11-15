@@ -41,168 +41,300 @@ interface NodeRequire {
 }
 
 interface NodeModule {
-	exports: any;
 	id: string;
+	exports: any;
 	filename: string;
 	loaded: boolean;
-	parent: NodeModule | null | undefined;
 	children: NodeModule[];
 	paths: string[];
+	parent: NodeModule | null | undefined;
 	package?: any;
 }
 
+declare var __binding__: (id: string)=>any; // binding native module
 declare var __filename: string;
 declare var __dirname: string;
-declare var __binding__: (id: string)=>any; // binding native module
-declare var require: NodeRequire; // TODO May conflict with future node versions
-declare var module: NodeModule; // TODO May conflict with future node versions
-// Same as module.exports
-declare var exports: any;
+declare var require: NodeRequire;
+declare var module: NodeModule;
+declare var exports: any; // Same as module.exports
 
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number
+ * @type number:Number
+ * @global
+*/
+
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean
+ * @type boolean:Boolean
+ * @global
+*/
+
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object
+ * @type object:Object
+ * @global
+*/
+
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String
+ * @type string:String
+ * @global
+*/
+
+/**
+ * 32-bit integer, Range: -2147483648 to 2147483647
+ * @global
+*/
+type Int = number;
+
+/**
+ * 32-bit signed integer, Range: 0 to 4294967295
+ * @global
+*/
+type Uint = number;
+
+/**
+ * 16-bit signed integer, Range: 0 to 65535
+ * @global
+*/
+type Uint16 = number;
+
+/**
+ * 16-bit integer, Range: -32768 to 32767
+ * @global
+*/
+type Int16 = number;
+
+/**
+ * 8-bit signed integer, Range: 0 to 255
+ * @global
+*/
+type Uint8 = number;
+
+/**
+ * 8-bit integer, Range: -128 to 127
+ * @global
+*/
+type Int8 = number;
+
+/**
+ * 32-bit floating point， Range: -3.402823466E+38 to 3.402823466E+38
+ * @global
+*/
+type Float = number;
+
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number
+ * @interface Number
+ * @global
+*/
+interface NumberConstructor {
+	mix32(x: Uint): Uint;
+	mix32Fast(x: Uint): Uint;
+	mix32Fastest(x: Uint): Uint;
+}
+
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object
+ * @interface Object
+ * @global
+*/
 interface ObjectConstructor {
-	hashCode(obj: any): number;
+	hashCode(obj: any): Int;
 }
 
 interface Object {
-	hashCode(): number;
+	hashCode(): Int;
 }
 
-// Dictionaries
+/**
+ * @interface Dict Dictionaries
+ * @global
+ */
 interface Dict<T = any> {
 	[key: string]: T;
 }
 
 type TimeoutResult = any;
 
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function
+ * @interface Function
+ * @global
+*/
 interface Function {
-	hashCode(): number;
-	setTimeout(this: Function, time: number, ...argArray: any[]): TimeoutResult;
+	hashCode(): Int;
+	setTimeout(this: Function, time: Uint, ...argArray: any[]): TimeoutResult;
 }
 
 interface CallableFunction extends Function {
-	setTimeout<A extends any[], R>(this: (...args: A) => R, time: number, ...args: A): TimeoutResult;
+	setTimeout<A extends any[], R>(this: (...args: A) => R, time: Uint, ...args: A): TimeoutResult;
+}
+
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array
+ * @interface Array
+ * @global
+*/
+interface Array<T> {
+	hashCode(): Int;
+	deleteOf(value: T): T[];
+	indexReverse(index: Uint): T;
+	indexAt(index: Uint): T;
 }
 
 interface ArrayConstructor {
-	toArray(obj: any, index?: number, end?: number): any[];
+	toArray(obj: any, index?: Uint, end?: Uint): any[];
 }
 
-interface Array<T> {
-	hashCode(): number;
-	deleteOf(value: T): T[];
-	indexReverse(index: number): T;
-	indexAt(index: number): T;
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String
+ * @interface String
+ * @global
+*/
+interface String {
+	hashCode(): Int;
 }
 
 interface StringConstructor {
 	format(str: string, ...args: any[]): string;
 }
 
-interface String {
-	hashCode(): number;
-}
-
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number
+ * @interface Number
+ * @global
+*/
 interface Number {
 
-	hashCode(): number;
+	hashCode(): Int;
 
 	/**
-	* 转换为前后固定位数的字符串
-	* @param before {Number}  小数点前固定位数
-	* @param [after] {Number} 小数点后固定位数
+	* Convert to a string with a fixed number of digits before and after the decimal point
+	* 
+	* @param before Fixed number of digits before the decimal point
+	* @param after? Fixed number of digits after the decimal point
 	*/
-	toFixedBefore(before: number, after?: number): string;
+	toFixedBefore(before: Uint, after?: Uint): string;
 
 	/**
-	 * 转换为前后固定位数的字符串,但不包含小数点后面为0
-	 * @param after {Number}  小数点前固定位数
-	 * @param split {Number?}  分割小数点前的字符
-	 * @param symbol {String?}  分割小数点前的字符
+	 * Fixed the number of digits before the decimal point and used symbol separation
+	 * 
+	 * @param after  Fixed number of digits before the decimal point
+	 * @param split?  Split unit length
+	 * @param symbol?  Split characters
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Print: 1,000,000.03
+	 * console.log((1000000.03).toFixedVariable(8,3,','))
+	 * ```
 	*/
-	toFixedVariable(this: number, after: number, split?: number, symbol?: string): string;
-
+	toFixedVariable(after: Uint, split?: Uint, symbol?: string): string;
 }
 
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean
+ * @interface Boolean
+ * @global
+*/
 interface Boolean {
-	hashCode(): number;
+	hashCode(): Int;
 }
 
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
+ * @interface Date
+ * @global
+*/
 interface DateConstructor {
-
 	/**
-	 * @field current timezone
+	 * current timezone
+	 * @static
 	 */
-	currentTimezone: number;
+	currentTimezone: Uint;
 
 	/**
-	 * 解析字符串为时间
-	 * <pre><code>
-	 * var i = '2008-02-13 01:12:13';
-	 * var date = Date.parseDate(i); //返回的新时间
-	 * </code></pre>
-	 * @func parseDate(str[,format[,timezone]])
-	 * @param str {String}        要解析的字符串
-	 * @param [format] {String}   date format   default yyyyMMddhhmmssfff
-	 * @param [timezone] {Number} 要解析的时间所在时区,默认为当前时区
-	 * @return {Date}              返回新时间
+	 * Parse a string as a time
+	 * @param str       The string to parse
+	 * @param format?   date format default yyyyMMddhhmmssfff
+	 * @param timezone? The time zone of the time to be parsed, the default is the current time zone
+	 * @return          Retruu Date object
+	 * @static
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * let i = '2008-02-13 01:12:13';
+	 * let date = Date.parseDate(i); // The new time returned
+	 * ```
 	 */
-	parseDate(date_str: string, format?: string, timezone?: number): Date;
+	parseDate(date_str: string, format?: string, timezone?: Uint): Date;
 
 	/**
-		* 格式化时间戳(单位:毫秒)
-		* <pre><code>
-		* var time_span = 10002100;
-		* var format = 'dd hh:mm:ss';
-		* var str = Date.formatTimeSpan(time_span, format); // str = '0 2:46:42'
-		* var format = 'dd天hh时mm分ss秒';
-		* var str = Date.formatTimeSpan(time_span, format); // str = '0天2时46分42秒'
+		* Formatting timestamps
+		* 
+		* @method formatTimeSpan(ts,format?)
+		* @param time_span The timestamp to format
+		* @param format? The timestamp format to be formatted
+		* @return The returned formatted timestamp
+		* @static
+		* 
+		* @example
+		* 
+		* ```ts
+		* // Format timestamp (unit: milliseconds)
+		* let time_span = 10002100;
+		* let format = 'dd hh:mm:ss';
+		* let str = Date.formatTimeSpan(time_span, format); // str = '0 2:46:42'
+		* let format = 'dd天hh时mm分ss秒';
+		* let str = Date.formatTimeSpan(time_span, format); // str = '0天2时46分42秒'
 		* format = 'hh时mm分ss秒';
 		* str = Date.formatTimeSpan(time_span, format); // str = '2时46分42秒'
 		* format = 'mm分ss秒';
 		* str = Date.formatTimeSpan(time_span, format); // str = '166分42秒'
-		* </code></pre>
-		* @func formatTimeSpan(ts[,format])
-		* @param ts {Number} 要格式化的时间戳
-		* @param [format]  {String} 要格式化的时间戳格式
-		* @return {String} 返回的格式化后的时间戳
+		* ```
 		*/
-	formatTimeSpan(time_span: number, format?: string): string;
-
+	formatTimeSpan(time_span: Uint, format?: string): string;
 }
 
 interface Date {
-
-	hashCode(): number;
+	hashCode(): Int;
 
 	/**
-	 * @func add 给当前Date时间追加毫秒,改变时间值
-	 * @param ms {Number}  要添追加的毫秒值
-	 * @return {Date}
+	 * Add milliseconds to the current Date time and change the time value
+	 * @param ms The millisecond value to append
 	 */
-	add(ms: number): Date;
+	add(ms: Uint): Date;
 
 	/**
-		* 给定日期格式返回日期字符串
-		* <pre><code>
-		* var date = new Date();
-		* var format = 'yyyy-MM-dd hh:mm:ss.fff';
-		* var dateStr = date.toString(format); // dateStr的值为 '2008-12-10 10：32：23'
+		* Returns a date string given a date format
+		* @param format? The format of the string to be converted
+		* @return Returns the formatted time string
+		* 
+		* @exmples
+		* 
+		* ```ts
+		* let date = new Date();
+		* let format = 'yyyy-MM-dd hh:mm:ss.fff';
+		* let dateStr = date.toString(format); // dateStr的值为 '2008-12-10 10：32：23'
 		* format = 'yyyy-MM-dd hh:mm:ss';
 		* dateStr = date.toString(format); // dateStr的值为 '2008-12-10 10：32：23'
 		* format = 'yyyy/MM/dd';
 		* dateStr = date.toString(format); // dateStr的值为 '2008/12/10'
 		* format = 'yyyy-MM-dd hh';
 		* dateStr = date.toString(format); // dateStr的值为 '2008-12-10 10'
-		* </code></pre>
-		* @func date_to_string(date[,foramt])
-		* @param date {Date}
-		* @param [format] {String} 要转换的字符串格式
-		* @return {String} 返回格式化后的时间字符串
+		* ```
 		*/
 	toString(format?: string, timezone?: number): string;
-
 }
 
+/**
+ * @interface ErrorDescribe
+ * @global
+*/
 interface ErrorDescribe {
 	name?: string;
 	message?: string;
@@ -213,14 +345,31 @@ interface ErrorDescribe {
 	[prop: string]: any;
 }
 
-type ErrnoCode = [number/*errno*/, string/*message*/, string?/*description*/];
+/**
+ * The [errno,message,description] of Array
+ * @type ErrnoCode:[number,string,string?]
+ * @global
+*/
+type ErrnoCode = [number, string, string?];
+
+/**
+ * @global
+*/
 type ErrorNewArg = ErrnoCode | Error | string | ErrorDescribe;
 
+/**
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error
+ * @interface Error
+ * @global
+*/
 interface ErrorConstructor {
 	'new'(err: ErrorNewArg, ...child: ErrorNewArg[]): Error;
 	toJSON(err: Error): any;
 	setStackTraceJSON(enable: boolean): void;
-	/** Create .stack property on a target object */
+	/**
+	 * Create .stack property on a target object
+	 * @static
+	 */
 	captureStackTrace(targetObject: Object, constructorOpt?: Function): void;
 }
 
@@ -244,7 +393,7 @@ if (Date.formatTimeSpan !== undefined)
 	return;
 
 if (typeof globalThis == 'undefined') {
-	var globa = arguments[0]('(typeof global == "object" ? global: 0)');
+	let globa = arguments[0]('(typeof global == "object" ? global: 0)');
 	if (globa) {
 		(globa as any).globalThis = globa;
 	} else if (typeof window == 'object') {
@@ -252,100 +401,122 @@ if (typeof globalThis == 'undefined') {
 	}
 }
 
-var currentTimezone = new Date().getTimezoneOffset() / -60;
-var G_slice = Array.prototype.slice;
-var G_hash_code_id = 1;
-var G_hash_code_set = new WeakSet();
-var DateToString = (Date.prototype as any).__toString__ || Date.prototype.toString;
-var ErrorToString = (Error.prototype as any).__toString__ || Error.prototype.toString;
+const currentTimezone = new Date().getTimezoneOffset() / -60;
+const _slice = Array.prototype.slice;
+let   _fn_hash_id = 1;
+const _hash_code_set = new WeakSet();
+const fn_hash_map = new WeakMap<Function, number>();
+const DateToString = (Date.prototype as any).__toString__ || Date.prototype.toString;
+const ErrorToString = (Error.prototype as any).__toString__ || Error.prototype.toString;
 
-definePropertys(Date.prototype, {__toString__: Date.prototype.toString});
-definePropertys(Date.prototype, {__toString__: Error.prototype.toString});
-
-/**
- * @method ext_class #  EXT class prototype objects
- */
 function definePropertys(obj: any, extd: any): void {
-	for (var i in extd) {
-		var desc = <PropertyDescriptor>Object.getOwnPropertyDescriptor(extd, i);
+	for (let i in extd) {
+		let desc = Object.getOwnPropertyDescriptor(extd, i)!;
 		desc.enumerable = false;
 		Object.defineProperty(obj, i, desc);
 	}
 }
 
+function mix32(x: number): number {
+	x ^= x >> 16;
+	x = Math.imul(x, 0x7feb352d);
+	x ^= x >> 15;
+	x = Math.imul(x, 0x846ca68b);
+	x ^= x >> 16;
+	return x >>> 0;
+}
+
+function mix32Fast(x: number): number {
+	x ^= x >>> 17;
+	x = Math.imul(x, 0xed5ad4bb);
+	x ^= x >>> 11;
+	return x >>> 0;
+}
+
+function mix32Fastest(x: number): number {
+	x ^= x >>> 16;
+	x ^= x << 9;
+	x ^= x >>> 5;
+	return x >>> 0;
+}
+
 function hashCode(obj: any): number {
-	return 	obj === null ? -1354856:
-					obj === undefined ? -3387255: obj.hashCode();
+	return obj ? obj.hashCode():
+		obj === null ? 0xdeadbeef :
+		obj === undefined ? 0x9e3779b9: obj.hashCode();
 }
 
 // index of
 function indexOf(str: string, str1: string): number {
-	var index = str.indexOf(str1);
+	let index = str.indexOf(str1);
 	return index > -1 ? index : Infinity;
 }
 
-definePropertys(Object, {
-	hashCode: hashCode,
-});
+const mix32_fn = mix32Fast;
+
+definePropertys(Date.prototype, {__toString__: Date.prototype.toString});
+definePropertys(Date.prototype, {__toString__: Error.prototype.toString});
+
+definePropertys(Number, { mix32, mix32Fast, mix32Fastest });
+definePropertys(Object, { hashCode });
 
 definePropertys(Object.prototype, {
-	hashCode(): number {
-		if (G_hash_code_set.has(this)) 
-			return 0;
-		G_hash_code_set.add(this);
-		var _hash = 5381;
-		for (var key in this) {
-			_hash += (_hash << 5) + (key.hashCode() + hashCode(this[key]));
+	hashCode(): Int {
+		if (_hash_code_set.has(this))
+			return 0x9e3779b1;
+		_hash_code_set.add(this);
+		// let _hash = 5381;
+		let _hash = 0x811c9dc5; // FNV offset
+		for (let key in this) {
+			// _hash = ((_hash << 5) + _hash + key.hashCode()) >>> 0;
+			// _hash = ((_hash << 5) + _hash + hashCode(this[key])) >>> 0;
+			_hash = mix32_fn(_hash ^ key.hashCode());
+			_hash = mix32_fn(_hash ^ hashCode(this[key]));
 		}
-		G_hash_code_set.delete(this);
+		_hash_code_set.delete(this);
 		return _hash;
 	},
 });
 
 definePropertys(Function.prototype, {
-	
-	hashCode(): number {
-		if (!this.hasOwnProperty('M_hashCode')) {
-			Object.defineProperty(this, 'M_hashCode', { 
-				enumerable: false, configurable: false, writable: false, value: G_hash_code_id++
-			});
-		}
-		return this.M_hashCode;
+	hashCode(): Int {
+		let h = fn_hash_map.get(this);
+		if (h !== undefined) return h;
+		h = mix32Fast(_fn_hash_id++);
+		fn_hash_map.set(this, h);
+		return h;
 	},
-
 	setTimeout(time: number, ...args: any[]): TimeoutResult {
-		var fn = this;
+		let fn = this;
 		return setTimeout(function() {
 			fn(...args);
 		}, time);
 	},
-
 });
 
 definePropertys(Array, {
 	toArray(obj: any, index: number, end: number): any[] {
-		return G_slice.call(obj, index, end);
+		return _slice.call(obj, index, end);
 	},
 });
 
 definePropertys(Array.prototype, {
-
-	hashCode(): number {
-		if (G_hash_code_set.has(this)) 
-			return 0;
-		G_hash_code_set.add(this);
-		var _hash = 5381;
-		for (var item of this) {
-			if (item) {
-				_hash += (_hash << 5) + item.hashCode();
-			}
+	hashCode(): Int {
+		if (_hash_code_set.has(this))
+			return 0x9e3779b1;
+		_hash_code_set.add(this);
+		// let _hash = 5381;
+		let _hash = 0x811c9dc5; // FNV offset
+		for (let item of this) {
+			// _hash = ((_hash << 5) + _hash + hashCode(item)) >>> 0;
+			_hash = mix32_fn(_hash ^ hashCode(item));
 		}
-		G_hash_code_set.delete(this);
+		_hash_code_set.delete(this);
 		return _hash;
 	},
 
 	deleteOf(value: any): any[] {
-		var i = this.indexOf(value);
+		let i = this.indexOf(value);
 		if (i != -1) {
 			this.splice(i, 1);
 		}
@@ -359,26 +530,26 @@ definePropertys(Array.prototype, {
 	indexAt(index: number): any {
 		return this[index];
 	}
-
 });
 
 // ext TypedArray
 definePropertys((Uint8Array as any).prototype.__proto__, {
-
-	hashCode(): number {
-		var _hash = 5381;
-		var self = new Uint8Array(this.buffer, this.byteOffset, this.byteLength);
-		for (var item of self) {
-			_hash += (_hash << 5) + item;
+	hashCode(): Int {
+		// let _hash = 5381;
+		let _hash = 0x811c9dc5; // FNV offset
+		let self = new Uint8Array(this.buffer, this.byteOffset, this.byteLength);
+		for (let it of self) {
+			// _hash = ((_hash << 5) + _hash + item) >>> 0;
+			_hash = Math.imul(_hash ^ it, 0x01000193);
 		}
-		return _hash;
+		return mix32_fn(_hash);
 	},
 });
 
 definePropertys(String, {
 	format(str: string, ...args: any[]): string {
-		var val = String(str);
-		for (var i = 0, len = args.length; i < len; i++)
+		let val = String(str);
+		for (let i = 0, len = args.length; i < len; i++)
 			val = val.replace(new RegExp('\\{' + i + '\\}', 'g'), args[i]);
 		return val;
 	}
@@ -386,30 +557,36 @@ definePropertys(String, {
 
 definePropertys(String.prototype, {
 	hashCode: function(): number {
-		var _hash = 5381;
-		var len = this.length;
-		while (len) {
-			len--;
-			_hash += (_hash << 5) + this.charCodeAt(len);
+		// let _hash = 5381;
+		let _hash = 0x811c9dc5; // FNV offset
+		let len = this.length;
+		for (let i = 0; i < len; i++) {
+			// _hash = ((_hash << 5) + _hash + this.charCodeAt(i)) >>> 0;
+			_hash = Math.imul(_hash ^ this.charCodeAt(i), 0x01000193);
 		}
-		return _hash;
+		return mix32_fn(_hash);
 	},
 });
 
-definePropertys(Number.prototype, {
+const f64 = new Float64Array(1);
+const u32 = new Uint32Array(f64.buffer);
 
-	hashCode(): number {
-		return this;
+definePropertys(Number.prototype, {
+	hashCode(): Int {
+		f64[0] = this;
+		//return mix32_fn(u32[0] ^ u32[1]);
+		// Use XOR directly for better performance
+		return (u32[0] ^ u32[1]) >>> 0;
 	},
 
 	toFixedBefore(this: number, before: number, after: number): string {
 		if (!isFinite(this)) {
 			return String(this);
 		} else {
-			var num = typeof after == 'number' ? this.toFixed(after) : String(this);
-			var match = num.match(/^(\d+)(\.\d+)?$/)!;
-			var integer = match[1];
-			var len = before - integer.length;
+			let num = typeof after == 'number' ? this.toFixed(after) : String(this);
+			let match = num.match(/^(\d+)(\.\d+)?$/)!;
+			let integer = match[1];
+			let len = before - integer.length;
 			if (len > 0)
 				num = new Array(len + 1).join('0') + num;
 			return num;
@@ -438,40 +615,35 @@ definePropertys(Number.prototype, {
 		l[0] = l0_;
 		return l.join('.');
 	},
-
 });
 
 definePropertys(Boolean.prototype, {
-	hashCode(): number {
-		return this == true ? -1186256: -23547257;
+	hashCode(): Int {
+		return this == true ? 0x345678 : 0x123456;
 	},
 });
 
 definePropertys(Date, {
-
 	currentTimezone: currentTimezone,
 
 	parseDate(
 		date_str: string, 
 		format?: string, /* = 'yyyyMMddhhmmssfff', */
 		timezone?: number, /* = currentTimezone*/
-	): Date 
+	): Date
 	{
-		var s = String(date_str).replace(/[^0-9]/gm, '');
-		var f = '';
-
+		let s = String(date_str).replace(/[^0-9]/gm, '');
+		let f = '';
 		format = format || 'yyyyMMddhhmmssfff';
 		format.replace(/(yyyy|MM|dd|hh|mm|ss|fff)/gm, e=>{
 			f += e;
 			return '';
 		});
-		
 		if (timezone === undefined)
 			timezone = currentTimezone;
 
-		var d = new Date();
-		var diffTime = currentTimezone - timezone;
-
+		let d = new Date();
+		let diffTime = currentTimezone - timezone;
 		return new Date(
 			Number(s.substring(indexOf(f, 'yyyy'), 4)) || d.getFullYear(),
 			Number(s.substring(indexOf(f, 'MM'), 2) || 1/*(d.getMonth() + 1)*/) - 1,
@@ -484,20 +656,19 @@ definePropertys(Date, {
 	},
 
 	formatTimeSpan(time_span: number, format: string = '{(dd) }?{(hh):}?{(mm):}{(ss)}', isFixedBefore = false): string {
-
-		var data = [];
-		var items = [
+		let data = [];
+		let items = [
 			[1, 1000, /\{([^\}]*?)\(fff\)([^\}]*?)\}/g, /\{([^\}]*?)\(fff\)([^\}]*?)\}\?/g],
 			[1000, 60, /\{([^\}]*?)\(ss\)([^\}]*?)\}/g, /\{([^\}]*?)\(ss\)([^\}]*?)\}\?/g],
 			[60, 60, /\{([^\}]*?)\(mm\)([^\}]*?)\}/g, /\{([^\}]*?)\(mm\)([^\}]*?)\}\?/g],
 			[60, 24, /\{([^\}]*?)\(hh\)([^\}]*?)\}/g, /\{([^\}]*?)\(hh\)([^\}]*?)\}\?/g],
 			[24, 1, /\{([^\}]*?)\(dd\)([^\}]*?)\}/g, /\{([^\}]*?)\(dd\)([^\}]*?)\}\?/g]
 		];
-		var start = false;
+		let start = false;
 
-		for (var i = 0; i < 5; i++) {
-			var item = items[i];
-			var reg = <RegExp>item[2];
+		for (let i = 0; i < 5; i++) {
+			let item = items[i];
+			let reg = <RegExp>item[2];
 
 			if (format.match(reg)) {
 				start = true;
@@ -509,13 +680,10 @@ definePropertys(Date, {
 			data.push([time_span % <number>item[1], time_span]);
 		}
 
-		if (!start) {
+		if (!start)
 			return format;
-		}
-
 		data.indexReverse(0).reverse();
-
-		data.forEach(function (item, index) {//debugger
+		data.forEach(function (item, index) {
 			let val = Math.floor(item[0] as number);
 			let val2 = isFixedBefore ? val.toFixedBefore(2): String(val);
 			if (val) { // != 0
@@ -528,13 +696,12 @@ definePropertys(Date, {
 		});
 		return format;
 	},
-
 });
 
 definePropertys(Date.prototype, {
 
-	hashCode(): number {
-		return this.valueOf();
+	hashCode(): Int {
+		return this.valueOf() >>> 0;
 	},
 
 	add(ms: number): Date {
@@ -544,10 +711,10 @@ definePropertys(Date.prototype, {
 
 	toString(format?: string, timezone?: number): string {
 		if (format/*typeof format == 'string'*/) {
-			var d = new Date(this.valueOf());
+			let d = new Date(this.valueOf());
 			if (typeof timezone == 'number') {
-				var cur_time_zone = d.getTimezoneOffset() / -60;
-				var offset = timezone - cur_time_zone;
+				let cur_time_zone = d.getTimezoneOffset() / -60;
+				let offset = timezone - cur_time_zone;
 				d.setHours(d.getHours() + offset);
 			}
 			return format.replace('yyyy', String(d.getFullYear()))
@@ -576,31 +743,28 @@ const errors: Dict<Function> = {
 
 if (!Error.captureStackTrace) {
 	definePropertys(Error, {
-		captureStackTrace(targetObject: Object, constructorOpt?: Function): void {
-			// TODO ...
-		}
+		captureStackTrace(targetObject: Object, constructorOpt?: Function): void {}
 	});
 }
 
-var stackTraceJSON = true;
+let stackTraceJSON = true;
 
 definePropertys(Error, {
-
 	new(arg: ErrorNewArg, ...child: ErrorNewArg[]): Error {
-		var err: Error;
+		let err: Error;
 		if (typeof arg == 'object') { // ErrnoCode | Error | ErrorDescribe;
 			if (arg instanceof Error) {
 				err = <Error>arg;
 			} if (Array.isArray(arg)) { // ErrnoCode
-				var errnoCode = <ErrnoCode>arg;
+				let errnoCode = <ErrnoCode>arg;
 				err = new Error(errnoCode[1] || errnoCode[2] || 'Unknown error');
 				err.errno = errnoCode[0];
 				err.description = errnoCode[2] || '';
 				Error.captureStackTrace(err, Error.new);
 			} else { // ErrorDescribe
-				var describe = <ErrorDescribe>arg;
-				var Err = <ErrorConstructor>(errors[(<Error>arg).name] || Error);
-				var msg = describe.message || describe.error || 'Unknown error';
+				let describe = <ErrorDescribe>arg;
+				let Err = <ErrorConstructor>(errors[(<Error>arg).name] || Error);
+				let msg = describe.message || describe.error || 'Unknown error';
 				err = <Error>Object.assign(new Err(msg), arg);
 				Error.captureStackTrace(err, Error.new);
 			}
@@ -609,42 +773,35 @@ definePropertys(Error, {
 			Error.captureStackTrace(err, Error.new);
 		}
 		err.errno = Number(err.errno) || Number(err.code) || -30000;
-
 		if (child.length) {
 			if (!Array.isArray(err.child))
 				err.child = [];
-			for (var ch of child) {
+			for (let ch of child)
 				err.child.push(Error.new(ch));
-			}
 		}
 		return err;
 	},
-
 	toJSON(err: any): Error {
 		return Error.new(err).toJSON()
 	},
-
 	setStackTraceJSON(enable: boolean) {
 		stackTraceJSON = !!enable;
 	},
 });
 
 definePropertys(Error.prototype, {
-
 	extend(desc: ErrorDescribe) {
-		Object.assign(this, desc);
-		return this;
+		return Object.assign(this, desc);
 	},
-
-	hashCode(): number {
-		var _hash = Object.prototype.hashCode.call(this);
-		_hash += (_hash << 5) + this.message.hashCode();
-		return _hash;
+	hashCode(): Int {
+		let _hash = Object.prototype.hashCode.call(this);
+		// _hash = (_hash << 5) + _hash + this.message.hashCode();
+		_hash = Math.imul(_hash ^ this.message.hashCode(), 0x01000193);
+		return _hash >>> 0;
 	},
-
 	toJSON(): any {
-		var err: Error = this;
-		var r: any = Object.assign({}, err);
+		let err: Error = this;
+		let r: any = Object.assign({}, err);
 		r.name = err.name || '';
 		r.message = err.message || 'Unknown error';
 		r.errno = Number(err.errno) || -30000;
@@ -654,13 +811,12 @@ definePropertys(Error.prototype, {
 			r.stack = err.stack || '';
 		return r;
 	},
-
 	toStringStyled() {
 		return this.toString();
 	},
-
 	toString(this: Error) {
-		return ErrorToString.call(this) + '\n' + (this.description ? `Description: ${this.description}\n`: '') + 
+		return ErrorToString.call(this) + '\n' +
+			(this.description ? `Description: ${this.description}\n`: '') +
 			(this.child ? `Childs: [${this.child.map(e=>e.toString()).join(',')}]`: '');
 	},
 });
