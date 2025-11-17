@@ -28,214 +28,266 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-export declare class ListItem<T> {
-	private _host;
-	private _prev;
-	private _next;
-	private _value;
-	constructor(host: List<T>, prev: ListItem<T> | null, next: ListItem<T> | null, value: T);
-	get host(): List<T> | null;
-	get prev(): ListItem<T> | null;
-	get next(): ListItem<T> | null;
-	get value(): T;
-	set value(value: T);
+export interface ListIterator<T> {
+	readonly prev: ListIterator<T>;
+	readonly next: ListIterator<T>;
+	readonly host: List<T> | null;
+	value: T;
 }
-/**
- * @class List linked
- */
-export declare class List<T> {
-	private _first;
-	private _last;
+export declare class List<T = any> {
 	private _length;
-	get first(): ListItem<T> | null;
-	get last(): ListItem<T> | null;
+	private _end;
+	get begin(): ListIterator<T>;
+	get end(): ListIterator<T>;
 	get length(): number;
-	del(item: ListItem<T>): ListItem<T> | null;
-	delete(item: ListItem<T>): ListItem<T> | null;
-	unshift(value: T): ListItem<T>;
-	push(value: T): ListItem<T>;
-	pop(): T | null;
-	shift(): T | null;
-	insert(prev: ListItem<T>, value: T): ListItem<T>;
+	get front(): T | undefined;
+	get back(): T | undefined;
+	constructor();
+	toArray(): T[];
+	remove(it: ListIterator<T>): ListIterator<T>;
+	erase(begin: ListIterator<T>, end: ListIterator<T>): void;
+	insert(after: ListIterator<T>, value: T): ListIterator<T>;
+	splice(it: ListIterator<T>, from_begin: ListIterator<T>, from_end: ListIterator<T>): void;
+	spliceAll(it: ListIterator<T>, from: List<T>): void;
+	pushBack(value: T): ListIterator<T>;
+	pushFront(value: T): ListIterator<T>;
+	popBack(): void;
+	popFront(): void;
 	clear(): void;
 }
 /**
-	* @class Event
-	*/
-export declare class Event<Sender = any, Data = any, Origin = Sender> {
+ * @class Event The event data
+*/
+export declare class Event<Sender = any, SendData = any> {
+	private _sender;
 	private _data;
-	protected _noticer: EventNoticer<Event<Sender, Data, Origin>> | null;
-	private _origin;
-	returnValue: number;
-	get name(): string;
-	get data(): Data;
+	/** The return value */
+	returnValue: Uint;
+	/** The Data */
+	get data(): SendData;
+	/** The sender */
 	get sender(): Sender;
-	get origin(): Origin;
-	get noticer(): EventNoticer<Event<Sender, Data, Origin>> | null;
-	constructor(data: Data, origin?: Origin);
+	/** */
+	constructor(data: SendData);
 }
-declare type DefaultEvent = Event;
-export interface Listen<Event = DefaultEvent, Scope extends object = object> {
-	(this: Scope, evt: Event): any;
+/**
+ * @template E,Ctx
+ * @callback Listen(this:Ctx,evt:E)any
+*/
+export interface Listen<E = Event, Ctx extends object = object> {
+	(this: Ctx, evt: E): any;
 }
-export interface Listen2<Event = DefaultEvent, Scope extends object = object> {
-	(self: Scope, evt: Event): any;
+/**
+ * @template E,Ctx
+ * @callback Listen2(self:Ctx,evt:E)any
+*/
+export interface Listen2<E = Event, Ctx extends object = object> {
+	(self: Ctx, evt: E): any;
 }
-export declare class EventNoticer<E = DefaultEvent> {
-	private m_name;
-	private m_sender;
-	private m_listens;
-	private m_listens_map;
-	private m_length;
-	private m_enable;
+export type DataOf<T> = T extends Event<any, infer D> ? D : never;
+export type SenderOf<T> = T extends Event<infer S, any> ? S : never;
+/**
+ * @class EventNoticer
+ *
+ * Event notifier, the core of event listener adding, deleting, triggering and notification
+*/
+export declare class EventNoticer<E extends Event = Event> {
+	private _name;
+	private _sender;
+	private _listens?;
+	private _listens_map?;
+	private _length;
 	private _add;
-	/**
-	 * @get enable {bool} # 获取是否已经启用
-	 */
-	get enable(): boolean;
-	/**
-	 * @set enable {bool} # 设置, 启用/禁用
-	 */
-	set enable(value: boolean);
-	/**
-	 * @get name {String} # 事件名称
-	 */
+	/** Event name */
 	get name(): string;
 	/**
-	 * @get {Object} # 事件发送者
+	 * @get sender:any Event sender
 	 */
-	get sender(): any;
+	get sender(): SenderOf<E>;
 	/**
+	 * @get length Number of event listeners
+	 */
+	get length(): Uint;
+	/**
+	 * @param name   Event name
+	 * @param sender Event sender
+	 */
+	constructor(name: string, sender: SenderOf<E>);
+	/**
+	 * Add an event listener (function)
+	 * @param  listen    Listening Function
+	 * @param  ctxOrId?  Specify the listener function this or id alias
+	 * @param  id?       Listener alias, can be deleted by id
+	 * @return Returns the passed `id` or the automatically generated `id`
+	 * @example
+	 *	```ts
+	 *	var ctx = { a:100 }
+	 *	var id = screen.onChange.on(function(ev) {
+	 *	// Prints: 100
+	 *		console.log(this.a)
+	 *	}, ctx)
+	 *	// Replace Listener
+	 *	screen.onChange.on(function(ev) {
+	 *	// Prints: replace 100
+	 *		console.log('replace', this.a)
+	 *	}, ctx, id)
+	 *	```
+	 */
+	on<Ctx extends object>(listen: Listen<E, Ctx>, ctxOrId?: Ctx | string, id?: string): string;
+	/**
+	 * Add an event listener (function),
+	 * and "on" the same processor of the method to add the event trigger to receive two parameters
+	 * @param  listen    Listening Function
+	 * @param  ctxOrId?  Specify the listener function this or id alias
+	 * @param  id?       Listener alias, can be deleted by id
+	 * @return Returns the passed `id` or the automatically generated `id`
 	 *
-	 * @get {int} # 添加的事件侦听数量
+	 *
+	 * Example:
+	 *
+	 * ```js
+	 * var ctx = { a:100 }
+	 * var id = display_port.onChange.on2(function(ctx, ev) {
+	 * 	// Prints: 100
+	 * 	console.log(ctx.a)
+	 * }, ctx)
+	 * ```
 	 */
-	get length(): number;
-	/**
-	 * @constructor
-	 * @arg name   {String} # 事件名称
-	 * @arg sender {Object} # 事件发起者
-	 */
-	constructor(name: string, sender: object);
-	/**
-	 * @fun on # 绑定一个事件侦听器(函数)
-	 * @arg  listen {Function} #  侦听函数
-	 * @arg [scope] {Object}   # 重新指定侦听函数this
-	 * @arg [id]  {String}     # 侦听器别名,可通过id删除
-	 */
-	on<Scope extends object>(listen: Listen<E, Scope>, scopeOrId?: Scope | string, id?: string): string;
-	/**
-	 * @fun once # 绑定一个侦听器(函数),且只侦听一次就立即删除
-	 * @arg listen {Function} #         侦听函数
-	 * @arg [scope] {Object}  #         重新指定侦听函数this
-	 * @arg [id] {String}     #         侦听器别名,可通过id删除
-	 */
-	once<Scope extends object>(listen: Listen<E, Scope>, scopeOrId?: Scope | string, id?: string): string;
-	/**
-	 * Bind an event listener (function),
-	 * and "on" the same processor of the method to add the event trigger to receive two parameters
-	 * @fun on2
-	 * @arg listen {Function}  #              侦听函数
-	 * @arg [scope] {Object}   #      重新指定侦听函数this
-	 * @arg [id] {String}     #     侦听器别名,可通过id删除
-	 */
-	on2<Scope extends object>(listen: Listen2<E, Scope>, scopeOrId?: Scope | string, id?: string): string;
-	/**
-	 * Bind an event listener (function), And to listen only once and immediately remove
-	 * and "on" the same processor of the method to add the event trigger to receive two parameters
-	 * @fun once2
-	 * @arg listen {Function}     #           侦听函数
-	 * @arg [scope] {Object}      # 重新指定侦听函数this
-	 * @arg [id] {String}         # 侦听器id,可通过id删除
-	 */
-	once2<Scope extends object>(listen: Listen2<E, Scope>, scopeOrId?: Scope | string, id?: string): string;
+	on2<Ctx extends object>(listen: Listen2<E, Ctx>, ctxOrId?: Ctx | string, id?: string): string;
+	/** Forward the event to another noticer */
 	forward(noticer: EventNoticer<E>, id?: string): string;
-	forwardOnce(noticer: EventNoticer<E>, id?: string): string;
 	/**
-	 * @fun trigger # 通知所有观察者
-	 * @arg data {Object} # 要发送的数据
-	 * @ret {Object}
+	 * Set the lifespan of the listener function with the specified `id`
+	 * @param id Listener id
+	 * @param lifespan Lifespan, the number of times the listener is valid, default is 1
 	 */
-	trigger(data?: any): void;
+	setLifespan(id: string, lifespan?: Uint): void;
 	/**
-	 * @fun triggerWithEvent # 通知所有观察者
-	 * @arg data {Object} 要发送的event
-	 * @ret {Object}
+	 * Notify all observers
 	 */
-	triggerWithEvent(evt: E): void;
+	trigger(data: DataOf<E>): void;
 	/**
-	 * @fun off # 卸载侦听器(函数)
-	 * @arg [func] {Object}   # 可以是侦听函数,id,如果不传入参数卸载所有侦听器
-	 * @arg [scope] {Object}  # scope
+	 * Notify all observers
 	 */
-	off(listen?: string | Function | object, scope?: object): void;
+	triggerWithEvent(e: E): void;
+	/**
+	 * Remove listener function
+	 * @param listen?
+	 * 	It can be a listener function/id alias.
+	 * 	If no parameter is passed, all listeners will be uninstalled.
+	 * @param ctx? Context object, only valid when `listen` is a function
+	 * @return {Uint} Returns the number of deleted listeners
+	 */
+	off(listen?: Function | string, ctx?: object): Uint;
+	/**
+	 * Remove all listeners related to `ctx` on this noticer
+	*/
+	offByCtx(ctx: object): Uint;
 }
-export declare const VOID: any;
 /**
  * @class Notification
+ *
+ * This is a collection of events `EventNoticer`, event triggering and response center
+ *
+ * Derived types inherited from it can use the `@event` keyword to declare member events
+ *
  */
-export declare class Notification<E = DefaultEvent> {
+export declare class Notification<E extends Event = Event> {
 	/**
-	 * @func getNoticer
+	 * @method getNoticer(name)
 	 */
 	getNoticer(name: string): EventNoticer<E>;
 	/**
-	 * @func hasNoticer
+	 * @method hasNoticer(name)bool
 	 */
 	hasNoticer(name: string): boolean;
 	/**
-	 * @func addDefaultListener
+	 * @method addDefaultListener(name,listen)
 	 */
 	addDefaultListener(name: string, listen: Listen<E> | null): void;
 	/**
-	 * @func addEventListener(name, listen[,scope[,id]])
+	 * call: [`EventNoticer.on(listen,ctxOrId?,id?)`]
 	 */
-	addEventListener<Scope extends object>(name: string, listen: Listen<E, Scope>, scopeOrId?: Scope | string, id?: string): string;
+	addEventListener<Ctx extends object>(name: string, listen: Listen<E, Ctx>, ctxOrId?: Ctx | string, id?: string): string;
 	/**
-	 * @func addEventListenerOnce(name, listen[,scope[,id]])
+	 * call: [`EventNoticer.on2(listen,ctxOrId?,id?)`]
 	 */
-	addEventListenerOnce<Scope extends object>(name: string, listen: Listen<E, Scope>, scopeOrId?: Scope | string, id?: string): string;
+	addEventListener2<Ctx extends object>(name: string, listen: Listen2<E, Ctx>, ctxOrId?: Ctx | string, id?: string): string;
 	/**
-	 * @func addEventListener2(name, listen[,scope[,id]])
-	 */
-	addEventListener2<Scope extends object>(name: string, listen: Listen2<E, Scope>, scopeOrId?: Scope | string, id?: string): string;
-	/**
-	 * @func addEventListenerOnce2(name, listen[,scope[,id]])
-	 */
-	addEventListenerOnce2<Scope extends object>(name: string, listen: Listen2<E, Scope>, scopeOrId?: Scope | string, id?: string): string;
-	addEventForward(name: string, noticer: EventNoticer<E>, id?: string): string;
-	addEventForwardOnce(noticer: EventNoticer<E>, id?: string): string;
-	/**
-	* @func trigger 通知事监听器
-	* @arg name {String}       事件名称
-	* @arg data {Object}       要发送的消数据
+	 * call: [`EventNoticer.forward(noticer,id?)`]
 	*/
-	trigger(name: string, data?: any): void;
+	addEventForward(name: string, noticer: EventNoticer<E>, id?: string): string;
 	/**
-	* @func triggerWithEvent 通知事监听器
-	* @arg name {String}       事件名称
-	* @arg event {Event}       Event
+	 * call: [`EventNoticer.setLifespan(id,lifespan)`]
+	 */
+	setEventListenerLifespan(name: string, id: string, lifespan?: Uint): void;
+	/**
+	* Trigger an event by event name --> [`EventNoticer.trigger(data)`]
+	*/
+	trigger(name: string, data: DataOf<E>): void;
+	/**
+	* Trigger an event by name and [`Event`] --> [`EventNoticer.triggerWithEvent(event)`]
 	*/
 	triggerWithEvent(name: string, event: E): void;
 	/**
-	 * @func removeEventListener(name,[func[,scope]])
-	 */
-	removeEventListener(name: string, listen?: string | Function | object, scope?: object): void;
+	 * Remove listener function
+	 * @param name      Event name
+	 * @param listen?   It can be a listener function/id alias.
+	 *                   If no parameter is passed, all listeners will be uninstalled.
+	 * @param ctx?      Context object, only valid when `listen` is a function
+	*/
+	removeEventListener(name: string, listen?: Function | string, ctx?: object): void;
 	/**
-	 * @func removeEventListenerWithScope(scope) 卸载notification上所有与scope相关的侦听器
-	 * @arg scope {Object}
+	 * Delete all listeners related to `ctx` on `notification`
+	 *
+	 * Actually traverse and call the [`EventNoticer.offByCtx(ctx)`] method
+	 *
+	 * @example
+	 *
+	 * ```ts
+	 * import event from 'quark/event';
+	 *
+	 * class TestNotification extends Notification {
+	 * 	\@event readonly onChange;
+	 * }
+	 *
+	 * var notification = new TestNotification();
+	 * // Prints: responseonChange 0 100
+	 * notification.onChange = function(ev) { // add default listener
+	 * 	console.log('responseonChange 0', ev.data)
+	 * }
+	 * notification.triggerChange(100);
+	 *
+	 * // Prints:
+	 * // responseonChange 0 200
+	 * // responseonChange 1
+	 * notification.onChange.on(function(ev) {
+	 * 	console.log('responseonChange 1')
+	 * })
+	 * notification.triggerWithEvent('change', new Event(200));
+	 *
+	 * var noticer = notification.onChange;
+	 * noticer.off(0) // delete default listener
+	 * // Prints: responseonChange 1
+	 * notification.triggerChange();
+	 *
+	 * ```
 	 */
-	removeEventListenerWithScope(scope: object): void;
+	removeEventListenerByCtx(ctx: object): void;
 	/**
-	 * @func allNoticers() # Get all event noticer
-	 * @ret {Array}
+	 * Get all of [`EventNoticer`]
 	 */
 	allNoticers(): EventNoticer<E>[];
 	/**
-	 * @func triggerListenerChange
-	 */
-	triggerListenerChange(name: string, count: number, change: number): void;
+	*/
+	triggerListenerChange(name: string, count: Uint, change: Uint): void;
 }
+/**
+ * Typescript decorator
+ * @decorator
+*/
 export declare function event(target: any, name: string): void;
+
 export { };
 
 // ======================== IMPL ========================

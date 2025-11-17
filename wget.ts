@@ -29,7 +29,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 import util from './util';
-import {List,ListItem} from './event';
+import {List} from './event';
 import * as http from 'http';
 import * as https from 'https';
 import * as url from 'url';
@@ -145,14 +145,14 @@ export class WgetIMPL extends Promise<Result> {
 	private _write() {
 		if (this._fd) {
 			if (this._buffers.length) {
-				var buf = (this._buffers.first as ListItem<Buffer>).value;
+				var buf = this._buffers.front!;
 				fs.write(this._fd, buf, (err)=>{
 					if (err) {
 						this._error(err);
 						if (this._req)
 							this._req.destroy();
 					} else {
-						this._buffers.shift();
+						this._buffers.popFront();
 						this._write();
 					}
 				});
@@ -308,7 +308,7 @@ export class WgetIMPL extends Promise<Result> {
 						console.warn('WgetIMPL#_request', e);
 					}
 
-					this._buffers.push(chunk);
+					this._buffers.pushBack(chunk);
 
 					if (this._buffers.length == 1)
 					this._write();

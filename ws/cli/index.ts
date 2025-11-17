@@ -161,8 +161,7 @@ export class WSClient extends Notification implements conv.MessageHandle {
 			} else if (msg.isEvent()) {
 				// console.log('CLI Event receive', name);
 				try {
-					var evt = new Event(data||{}, sender || '');
-					this.triggerWithEvent(name, evt); // TODO
+					this.trigger(name, data||{});
 				} catch(err) {
 					console.error('WSClient#receiveMessage', err);
 				}

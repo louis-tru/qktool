@@ -492,7 +492,7 @@ export interface FieldData {
 
 export interface FileData {
 	name: string;
-	file: File;
+	file: IFileStream;
 }
 
 export class IncomingForm {
@@ -536,12 +536,12 @@ export class IncomingForm {
 	private bytesReceived: number = 0;
 	private bytesExpected: number = 0;
 
-	readonly onAborted = new EventNoticer('Aborted', this);
-	readonly onProgress = new EventNoticer<ProgressData>('Progress', this);
-	readonly onField = new EventNoticer<FieldData>('Field', this);
-	readonly onFileBegin = new EventNoticer<FileData>('FileBegin', this);
-	readonly onFile = new EventNoticer<FileData>('File', this);
-	readonly onError = new EventNoticer<Error>('Error', this);
+	readonly onAborted = new EventNoticer<Event<IncomingForm>>('Aborted', this);
+	readonly onProgress = new EventNoticer<Event<IncomingForm,ProgressData>>('Progress', this);
+	readonly onField = new EventNoticer<Event<IncomingForm,FieldData>>('Field', this);
+	readonly onFileBegin = new EventNoticer<Event<IncomingForm,FileData>>('FileBegin', this);
+	readonly onFile = new EventNoticer<Event<IncomingForm,FileData>>('File', this);
+	readonly onError = new EventNoticer<Event<IncomingForm,Error>>('Error', this);
 	readonly onEnd = new EventNoticer('End', this);
 
 	/**

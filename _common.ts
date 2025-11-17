@@ -146,7 +146,7 @@ export function scopeLock<R>(mutex: any, cb: ()=>Promise<R>|R): Promise<R> {
 		if (scopeLockQueue.has(mutex)) {
 			scopeLockQueue.get(mutex).push({resolve, reject, cb});
 		} else {
-			scopeLockQueue.set(mutex, new List().push({resolve, reject, cb}).host);
+			scopeLockQueue.set(mutex, new List().pushBack({resolve, reject, cb}).host);
 			scopeLockDequeue(mutex); // dequeue
 		}
 	})

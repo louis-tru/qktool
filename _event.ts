@@ -28,558 +28,508 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-var _id = 0;
+let _id = 0;
 
-export class ListItem<T> {
-	private _host: List<T> | null;
-	private _prev: ListItem<T> | null;
-	private _next: ListItem<T> | null;
-	private _value: T;
-	constructor(host: List<T>, prev: ListItem<T> | null, next: ListItem<T> | null, value: T) {
-		this._host = host;
-		this._prev = prev;
-		this._next = next;
-		this._value = value;
+function assert(value: any, message?: string) {
+	if (!value) {
+		throw new Error('assert fail, ' + (message || ''));
 	}
-	get host() { return this._host }
-	get prev() { return this._prev }
-	get next() { return this._next }
-	get value(): T { return this._value }
-	set value(value: T) { this._value = value }
 }
 
-/**
- * @class List linked 
- */
-export class List<T> {
+type RemoveReadonly<T> = {
+	-readonly [P in keyof T]: T[P];
+};
 
-	private _first: ListItem<T> | null = null;
-	private _last: ListItem<T> | null = null;
-	private _length: number = 0;
+export interface ListIterator<T> {
+	readonly prev: ListIterator<T>;
+	readonly next: ListIterator<T>;
+	readonly host: List<T> | null; // safe host
+	value: T;
+}
 
-	get first() {
-		return this._first;
-	}
+function List_link<T>(prev: ListIterator<T>, next: ListIterator<T>) {
+	(prev as RemoveReadonly<ListIterator<T>>).next = next;
+	(next as RemoveReadonly<ListIterator<T>>).prev = prev;
+	return next;
+}
 
-	get last() {
-		return this._last;
-	}
+export class List<T = any> {
+	private _length: Uint;
+	private _end: ListIterator<T>;
 
-	get length() {
-		return this._length;
-	}
+	get begin() {return this._end.next}
+	get end() {return this._end}
+	get length() {return this._length}
+	get front(): T | undefined {return this._end.next.value}
+	get back(): T | undefined {return this._end.prev.value}
 
-	delete(item: ListItem<T>) {
-		if (item.host === this) {
-			var prev = item.prev;
-			var next = item.next;
-			if (prev) {
-				(<any>prev)._next = next;
-			} else {
-				this._first = next;
-			}
-			if (next) {
-				(<any>next)._prev = prev;
-			} else {
-				this._last = prev;
-			}
-			(<any>item)._host = null;
-			(<any>item)._prev = null;
-			(<any>item)._next = null;
-			this._length--;
-			return next;
-		}
-		return null;
-	}
-
-	del(item: ListItem<T>) {
-		return this.delete(item);
-	}
-
-	unshift(value: T): ListItem<T> {
-		var item: ListItem<T>;
-		if (this._first) {
-			item = new ListItem(this, null, this._first, value);
-			(<any>this._first)._prev = item;
-			this._first = item;
-		} else {
-			item = new ListItem(this, null, null, value);
-			this._last = item;
-			this._first = item;
-		}
-		this._length++;
-		return item;
-	}
-
-	push(value: T): ListItem<T> {
-		var item: ListItem<T>;
-		if (this._last) {
-			item = new ListItem(this, this._last, null, value);
-			(<any>this._last)._next = item;
-			this._last = item;
-		} else {
-			item = new ListItem(this, null, null, value);
-			this._last = item;
-			this._first = item;
-		}
-		this._length++;
-		return item;
-	}
-
-	pop(): T | null {
-		if (this._length) {
-			var r = <ListItem<T>>this._last;
-			if (this._length > 1) {
-				(<any>r.prev)._next = null;
-				this._last = r.prev;
-			} else {
-				this._first = null;
-				this._last = null;
-			}
-			this._length--;
-			(<any>r)._host = null;
-			(<any>r)._prev = null;
-			(<any>r)._next = null;
-			return r.value;
-		}
-		return null;
-	}
-
-	shift(): T | null {
-		if (this._length) {
-			var r = <ListItem<T>>this._first;
-			if (this._length > 1) {
-				(<any>r.next)._prev = null;
-				this._first = r.next;
-			} else {
-				this._first = null;
-				this._last = null;
-			}
-			this._length--;
-			(<any>r)._host = null;
-			(<any>r)._prev = null;
-			(<any>r)._next = null;
-			return r.value;
-		}
-		return null;
-	}
-
-	insert(prev: ListItem<T>, value: T) {
-		if (prev.host !== this)
-			throw 'Bad argument.';
-
-		var _prev = prev as any;
-		var item: ListItem<T>;
-
-		if (_prev._next) {
-			item = new ListItem(this, _prev, _prev._next, value);
-			_prev._next._prev = item;
-			_prev._next = item;
-		} else {
-			item = new ListItem(this, _prev, null, value);
-			_prev._next = item;
-			this._last = item;
-		}
-
-		this._length++;
-		return item;
-	}
-
-	clear() {
-		this._first = null;
-		this._last = null;
+	constructor() {
+		let end = { host: this as List<T> } as RemoveReadonly<ListIterator<T>>;
+		end.prev = end;
+		end.next = end;
+		this._end = end;
 		this._length = 0;
 	}
 
+	toArray(): T[] {
+		const arr = [] as T[];
+		let node = this.begin, end = this._end;
+		while (node !== end) {
+			arr.push(node.value);
+			node = node.next;
+		}
+		return arr;
+	}
+
+	remove(it: ListIterator<T>): ListIterator<T> {
+		assert(it.host === this, 'List.erase() it host no match');
+		let node = it as RemoveReadonly<ListIterator<T>>;
+		if (node !== this._end) {
+			let next = List_link(node.prev, node.next);
+			node.host = null;
+			this._length--;
+			return next;
+		} else {
+			return this._end;
+		}
+	}
+
+	erase(begin: ListIterator<T>, end: ListIterator<T>) {
+		assert(begin.host === this, 'List.erase() begin host no match');
+		assert(end.host === this, 'List.erase() end host no match');
+		let node = begin as RemoveReadonly<ListIterator<T>>;
+		let prev = node.prev;
+		while (node !== end) {
+			node.host = null;
+			node = node.next;
+			this._length--;
+		}
+		List_link(prev, end);
+	}
+
+	insert(after: ListIterator<T>, value: T): ListIterator<T> {
+		assert(after.host === this, 'List.insert() host no match');
+		let node = {host: this as List<T>,value} as ListIterator<T>;
+		let next = after as RemoveReadonly<ListIterator<T>>;
+		List_link(next.prev, node);
+		List_link(node, next);
+		this._length++;
+		return node;
+	}
+
+	splice(it: ListIterator<T>, from_begin: ListIterator<T>, from_end: ListIterator<T>) {
+		assert(it.host === this, 'List.splice() assert it.host === this');
+		assert(from_begin.host, 'List.splice() assert from_begin.host');
+		assert(from_begin.host === from_end.host, 'List.splice() assert from_begin.host === from_end.host');
+		assert(from_begin.host !== this, 'List.splice() assert from_begin.host !== this');
+
+		let from = from_begin.host!;
+		let start = from_begin as RemoveReadonly<ListIterator<T>>;
+		let end = from_end as RemoveReadonly<ListIterator<T>>;
+		let cur = it as RemoveReadonly<ListIterator<T>>;
+		let start_prev = start.prev;
+
+		List_link(cur.prev, start);
+		while (start != end) {
+			this._length++;
+			from._length--;
+			start.host = this;
+			start = start.next;
+		}
+		List_link(end.prev, cur);
+		List_link(start_prev, end); // link
+	}
+
+	spliceAll(it: ListIterator<T>, from: List<T>) {
+		this.splice(it, from._end.next, from._end);
+	}
+
+	pushBack(value: T): ListIterator<T> {
+		return this.insert(this._end, value);
+	}
+
+	pushFront(value: T): ListIterator<T> {
+		return this.insert(this._end.next, value);
+	}
+
+	popBack() {
+		if (this._length)
+			this.remove(this._end.prev);
+	}
+
+	popFront() {
+		if (this._length)
+			this.remove(this._end.next);
+	}
+
+	clear() {
+		this.erase(this._end.next, this._end);
+	}
+}
+
+// -------------------------------------------------------------------------------------------
+
+/**
+ * @class Event The event data
+*/
+export class Event<Sender = any, SendData = any> {
+	private _sender: any;
+	private _data: SendData;
+	/** The return value */
+	returnValue: Uint = 0;
+	/** The Data */
+	get data(): SendData { return this._data; }
+	/** The sender */
+	get sender(): Sender { return this._sender; }
+	/** */
+	constructor(data: SendData) { this._data = data; }
 }
 
 /**
-	* @class Event
-	*/
-export class Event<Sender = any, Data = any, Origin = Sender> {
-	private _data: Data;
-	protected _noticer: any; //EventNoticer<Event<Sender, Data, Origin>> | null; // = null;
-	private _origin: any; // = null;
-
-	returnValue: number = 0;
-
-	get name() {
-		return (this._noticer as EventNoticer<Event<Sender, Data, Origin>>).name;
-	}
-
-	get data() {
-		return this._data;
-	}
-
-	get sender(): Sender {
-		return (this._noticer as EventNoticer<Event<Sender, Data, Origin>>).sender as Sender;
-	}
-
-	get origin(): Origin {
-		return this._origin;
-	}
-
-	get noticer() {
-		return this._noticer as EventNoticer<Event<Sender, Data, Origin>> | null;
-	}
-
-	constructor(data: Data, origin?: Origin) {
-		this._data = data;
-		this._origin = origin;
-	}
+ * @template E,Ctx
+ * @callback Listen(this:Ctx,evt:E)any
+*/
+export interface Listen<E = Event, Ctx extends object = object> {
+	(this: Ctx, evt: E): any;
 }
 
-(Event as any).prototype._noticer = null;
-(Event as any).prototype._origin = null;
-
-type DefaultEvent = Event;
-
-export type ListenID = string | number;
-
-export interface Listen<Event = DefaultEvent, Scope extends object = object> {
-	(this: Scope, evt: Event): any;
-}
-
-export interface Listen2<Event = DefaultEvent, Scope extends object = object> {
-	(self: Scope, evt: Event): any;
-}
-
-interface ListenItem {
-	origin: any,
-	listen: Function,
-	scope: any,
-	id: string,
+/**
+ * @template E,Ctx
+ * @callback Listen2(self:Ctx,evt:E)any
+*/
+export interface Listen2<E = Event, Ctx extends object = object> {
+	(self: Ctx, evt: E): any;
 }
 
 function check_noticer(noticer: any) {
-	if (!(noticer as EventNoticer))
+	if ( !(noticer as EventNoticer) )
 		throw new Error('Event listener function type is incorrect ');
 }
 
 function check_fun(origin: any) {
-	if (typeof origin != 'function') {
+	if ( typeof origin != 'function' ) {
 		throw new Error('Event listener function type is incorrect ');
 	}
 }
 
-function forwardNoticeNoticer<E>(forward_noticer: EventNoticer<E>, evt: E) {
+function forwardNoticeNoticer<E extends Event<any, any> = Event>(noticer: EventNoticer<E>, evt: E) {
+	let oldSender = (evt as any)._sender;
 	try {
-		var noticer = (evt as any)._noticer;
-		forward_noticer.triggerWithEvent(evt);
+		noticer.triggerWithEvent(evt);
 	} finally {
-		(evt as any)._noticer = noticer;
+		(evt as any)._sender = oldSender;
 	}
 }
 
-// export interface EventNoticer<E = DefaultEvent> extends Listen<E> {}
+interface ListenItem {
+	origin: any,
+	listen: Function | null,
+	ctx: any,
+	id: string,
+}
 
-export class EventNoticer<E = DefaultEvent> {
+export type DataOf<T> = T extends Event<any, infer D> ? D : never;
+export type SenderOf<T> = T extends Event<infer S, any> ? S : never;
 
-	private m_name: string;
-	private m_sender: any;
-	private m_listens: List<ListenItem> | null = null;
-	private m_listens_map: Map<string, ListItem<ListenItem>> | null = null
-	// private m_length: number = 0
-	private m_enable: boolean = true
+/**
+ * @class EventNoticer
+ * 
+ * Event notifier, the core of event listener adding, deleting, triggering and notification
+*/
+export class EventNoticer<E extends Event = Event> {
+	private _name: string;
+	private _sender: SenderOf<E>;
+	private _listens?: List<ListenItem>;
+	private _listens_map?: Map<string, ListIterator<ListenItem>>;
+	private _length: Uint = 0
 
-	/* @fun add # Add event listen */
-	private _add<Scope>(origin_listen: any, listen: any, scope: Scope|ListenID, id?: ListenID): string {
-		var self = this;
+	/* Add event listen */
+	private _add(origin_listen: any, listen: any, ctx: any, id?: string): string {
+		let self = this;
 
-		var listens_map = self.m_listens_map;
-		if (!listens_map) {
-			self.m_listens = new List();
-			self.m_listens_map = listens_map = new Map();
+		let listens_map = self._listens_map;
+		if ( !listens_map ) {
+			self._listens = new List();
+			self._listens_map = listens_map = new Map();
 		}
 
-		if (typeof scope != 'object') { // id
-			id = String(scope || ++_id);
-			scope = self.m_sender;
-		} else { // scope
-			scope = scope || self.m_sender;
+		if (typeof ctx != 'object') {
+			id = String(ctx || ++_id);
+			ctx = self._sender;
+		} else {
+			ctx = ctx || self._sender;
 			id = String(id || ++_id);
 		}
+		id = String(id);
 
-		var value: ListenItem = {
+		let value: ListenItem = {
 			origin: origin_listen,
 			listen: listen,
-			scope: scope,
+			ctx: ctx,
 			id: id,
 		};
-		var item = listens_map.get(id);
+		let item = listens_map.get(id);
 
-		if (item) { // replace
+		if ( item ) { // replace
 			item.value = value;
 		} else { // add
-			listens_map.set(id, (self.m_listens as List<ListenItem>).push(value));
+			listens_map.set(id, self._listens!.pushBack(value));
+			self._length++;
 		}
-
 		return id;
 	}
 
-	/**
-	 * @get enable {bool} # 获取是否已经启用
-	 */
-	get enable() {
-		return this.m_enable;
-	}
-
-	/**
-	 * @set enable {bool} # 设置, 启用/禁用
-	 */
-	set enable(value: boolean) {
-		this.m_enable = value;
-	}
-
-	/**
-	 * @get name {String} # 事件名称
-	 */
+	/** Event name */
 	get name(): string {
-		return this.m_name;
+		return this._name;
 	}
 
 	/**
-	 * @get {Object} # 事件发送者
+	 * @get sender:any Event sender
 	 */
 	get sender() {
-		return this.m_sender;
+		return this._sender;
 	}
 
 	/**
+	 * @get length Number of event listeners
+	 */
+	get length(): Uint {
+		return this._length;
+	}
+	
+	/**
+	 * @param name   Event name
+	 * @param sender Event sender
+	 */
+	constructor(name: string, sender: SenderOf<E>) {
+		this._name = name;
+		this._sender = sender;
+	}
+
+	/**
+	 * Add an event listener (function)
+	 * @param  listen    Listening Function
+	 * @param  ctxOrId?  Specify the listener function this or id alias
+	 * @param  id?       Listener alias, can be deleted by id
+	 * @return Returns the passed `id` or the automatically generated `id`
+	 * @example
+	 *	```ts
+	 *	var ctx = { a:100 }
+	 *	var id = screen.onChange.on(function(ev) {
+	 *	// Prints: 100
+	 *		console.log(this.a)
+	 *	}, ctx)
+	 *	// Replace Listener
+	 *	screen.onChange.on(function(ev) {
+	 *	// Prints: replace 100
+	 *		console.log('replace', this.a)
+	 *	}, ctx, id)
+	 *	```
+	 */
+	on<Ctx extends object>(listen: Listen<E, Ctx>, ctxOrId?: Ctx | string, id?: string): string {
+		check_fun(listen);
+		return this._add(listen, listen, ctxOrId, id);
+	}
+
+	/**
+	 * Add an event listener (function),
+	 * and "on" the same processor of the method to add the event trigger to receive two parameters
+	 * @param  listen    Listening Function
+	 * @param  ctxOrId?  Specify the listener function this or id alias
+	 * @param  id?       Listener alias, can be deleted by id
+	 * @return Returns the passed `id` or the automatically generated `id`
 	 * 
-	 * @get {int} # 添加的事件侦听数量
+	 * 
+	 * Example:
+	 * 
+	 * ```js
+	 * var ctx = { a:100 }
+	 * var id = display_port.onChange.on2(function(ctx, ev) {
+	 * 	// Prints: 100
+	 * 	console.log(ctx.a)
+	 * }, ctx)
+	 * ```
 	 */
-	get length() {
-		return this.m_listens ? this.m_listens.length : 0;
-	}
-
-	/**
-	 * @constructor
-	 * @arg name   {String} # 事件名称
-	 * @arg sender {Object} # 事件发起者
-	 */
-	constructor(name: string, sender: object) {
-		this.m_name = name;
-		this.m_sender = sender;
-	}
-
-	/**
-	 * @fun on # 绑定一个事件侦听器(函数)
-	 * @arg  listen {Function} #  侦听函数
-	 * @arg [scope] {Object}   # 重新指定侦听函数this
-	 * @arg [id]  {String}     # 侦听器别名,可通过id删除
-	 */
-	on<Scope extends object>(listen: Listen<E, Scope>, scopeOrId?: Scope | ListenID, id?: ListenID): string {
+	on2<Ctx extends object>(listen: Listen2<E, Ctx>, ctxOrId?: Ctx | string, id?: string): string {
 		check_fun(listen);
-		return this._add(listen, listen, scopeOrId, id);
+		return this._add(listen, { call: listen }, ctxOrId, id);
 	}
 
-	/**
-	 * @fun once # 绑定一个侦听器(函数),且只侦听一次就立即删除
-	 * @arg listen {Function} #         侦听函数
-	 * @arg [scope] {Object}  #         重新指定侦听函数this
-	 * @arg [id] {String}     #         侦听器别名,可通过id删除
-	 */
-	once<Scope extends object>(listen: Listen<E, Scope>, scopeOrId?: Scope | ListenID, id?: ListenID): string {
-		check_fun(listen);
-		var self = this;
-		var _id = this._add(listen, {
-			call: function (scope: Scope, evt: E) {
-				self.off(_id);
-				listen.call(scope, evt);
-			}
-		}, scopeOrId, id);
-		return _id;
-	}
-
-	/**
-	 * Bind an event listener (function),
-	 * and "on" the same processor of the method to add the event trigger to receive two parameters
-	 * @fun on2
-	 * @arg listen {Function}  #              侦听函数
-	 * @arg [scope] {Object}   #      重新指定侦听函数this
-	 * @arg [id] {String}     #     侦听器别名,可通过id删除
-	 */
-	on2<Scope extends object>(listen: Listen2<E, Scope>, scopeOrId?: Scope | ListenID, id?: ListenID): string {
-		check_fun(listen);
-		return this._add(listen, { call: listen }, scopeOrId, id);
-	}
-
-	/**
-	 * Bind an event listener (function), And to listen only once and immediately remove
-	 * and "on" the same processor of the method to add the event trigger to receive two parameters
-	 * @fun once2
-	 * @arg listen {Function}     #           侦听函数
-	 * @arg [scope] {Object}      # 重新指定侦听函数this
-	 * @arg [id] {String}         # 侦听器id,可通过id删除
-	 */
-	once2<Scope extends object>(listen: Listen2<E, Scope>, scopeOrId?: Scope | ListenID, id?: ListenID): string {
-		check_fun(listen);
-		var self = this;
-		var _id = this._add(listen, {
-			call: function (scope: Scope, evt: E) {
-				self.off(_id);
-				listen(scope, evt);
-			}
-		}, scopeOrId, id);
-		return _id;
-	}
-
-	forward(noticer: EventNoticer<E>, id?: ListenID): string {
+	/** Forward the event to another noticer */ 
+	forward(noticer: EventNoticer<E>, id?: string): string {
 		check_noticer(noticer);
 		return this._add(noticer, { call: forwardNoticeNoticer }, noticer, id);
 	}
 
-	forwardOnce(noticer: EventNoticer<E>, id?: ListenID): string {
-		check_noticer(noticer);
-		var self = this;
-		var _id = this._add(noticer, function (evt: E) {
-			self.off(_id);
-			forwardNoticeNoticer(noticer, evt);
-		}, noticer, id);
-		return _id;
-	}
-
 	/**
-	 * @fun trigger # 通知所有观察者
-	 * @arg data {Object} # 要发送的数据
+	 * Set the lifespan of the listener function with the specified `id`
+	 * @param id Listener id
+	 * @param lifespan Lifespan, the number of times the listener is valid, default is 1
 	 */
-	trigger(data?: any) {
-		this.triggerWithEvent(new Event(data, this.m_sender) as unknown as E);
-	}
-
-	/**
-	 * @fun triggerWithEvent # 通知所有观察者
-	 * @arg evt {Object} 要发送的event
-	 */
-	triggerWithEvent(evt: E) {
-		if (this.m_enable && this.m_listens) {
-			(evt as any)._noticer = this;
-			var listens = this.m_listens as List<ListenItem>;
-			var item = listens.first;
-			while (item) {
-				var next = item.next;
-				var { listen, scope } = item.value;
-				listen.call(scope, evt);
-				item = next;
+	setLifespan(id: string, lifespan: Uint = 1) {
+		if (this._length) {
+			let item = this._listens_map!.get(id);
+			if (item) {
+				let last = item.value.listen;
+				if (last) {
+					lifespan = Math.max(1, Number(lifespan) || 1);
+					item.value.listen = (ctx: any, evt: any)=>{
+						if (--lifespan <= 0) {
+							this.off(id);
+						}
+						last.call(ctx, evt);
+					};
+				}
 			}
-			(evt as any)._noticer = null;
 		}
 	}
 
 	/**
-	 * @fun off # 卸载侦听器(函数)
-	 * @arg [func] {Object}   # 可以是侦听函数,id,如果不传入参数卸载所有侦听器
-	 * @arg [scope] {Object}  # scope
+	 * Notify all observers
 	 */
-	off(listen?: ListenID | Function | object, scope?: object): number {
-		if (!this.m_listens) {
+	trigger(data: DataOf<E>) {
+		this.triggerWithEvent(new Event(data) as E);
+	}
+
+	/**
+	 * Notify all observers
+	 */
+	triggerWithEvent(e: E) {
+		if ( this._length ) {
+			(e as any)._sender = this._sender;
+			let listens = this._listens!;
+			let begin = listens.begin, end = listens.end;
+			while (begin !== end) {
+				let value = begin.value;
+				if (value.listen) {
+					value.listen.call(value.ctx, e);
+					begin = begin.next;
+				} else {
+					begin = listens.remove(begin);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Remove listener function
+	 * @param listen?
+	 * 	It can be a listener function/id alias.
+	 * 	If no parameter is passed, all listeners will be uninstalled.
+	 * @param ctx? Context object, only valid when `listen` is a function
+	 * @return {Uint} Returns the number of deleted listeners
+	 */
+	off(listen?: Function | string, ctx?: object): Uint {
+		if ( !this._length )
 			return 0;
-		}
-		var r = 0;
-		if (listen) {
-			var type = typeof listen;
-			if (type == 'string' || type == 'number') { // by id delete 
-				var name = String(listen);
-				let listens = this.m_listens as List<ListenItem>;
-				let listens_map = this.m_listens_map as Map<string, ListItem<ListenItem>>;
-				let item = listens_map.get(name);
-				if (item) {
-					listens.delete(item);
-					listens_map.delete(name);
-					r++;
-				}
-			} else if (listen instanceof Function) { // 要卸载是一个函数
-				let listens = this.m_listens as List<ListenItem>;
-				let listens_map = this.m_listens_map as Map<string, ListItem<ListenItem>>;
-				let item = listens.first;
-				if (scope) { // 需比较范围
-					while (item) {
-						let next = item.next;
-						let value = item.value;
-						if (value.origin === listen && value.scope === scope) {
-							listens.delete(item);
-							listens_map.delete(value.id);
-							r++;
-							break; // clear
-						}
-						item = next;
-					}
-				} else { // 与这个函数有关系的
-					let listens = this.m_listens as List<ListenItem>;
-					let listens_map = this.m_listens_map as Map<string, ListItem<ListenItem>>;
-					while (item) {
-						let next = item.next;
-						let value = item.value;
-						if (value.origin === listen) {
-							listens.delete(item);
-							listens_map.delete(value.id);
-							r++;
-							break; // clear
-						}
-						item = next;
-					}
-				}
-			} else if (listen instanceof Object) { //
-				let listens = this.m_listens as List<ListenItem>;
-				let listens_map = this.m_listens_map as Map<string, ListItem<ListenItem>>;
-				let item = listens.first;
-				// 要卸载这个范围上相关的侦听器,包括`EventNoticer`代理
-				while (item) {
-					var next = item.next;
-					var value = item.value;
-					if (value.scope === listen) {
-						listens.delete(item);
-						listens_map.delete(value.id);
-						r++;
-					}
-					item = next;
-				}
-			} else { //
-				throw new Error('Bad argument.');
+		let r = 0;
+		if ( !listen ) { // Delete all
+			let listens = this._listens!;
+			let begin = listens.begin, end = listens.end;
+			while ( begin !== end ) {
+				begin.value.listen = null; // clear
+				begin = begin.next;
+				r++;
 			}
-		} else { // 全部删除
-			let listens = this.m_listens as List<ListenItem>;
-			let listens_map = this.m_listens_map as Map<string, ListItem<ListenItem>>;
-			listens.clear();
-			listens_map.clear();
+			this._length = 0;
+			this._listens_map = new Map<string, ListIterator<ListenItem>>();
+		}
+		else if ( listen instanceof Function ) { // 卸载一个监听函数
+			let listens = this._listens!;
+			let listens_map = this._listens_map!;
+			let begin = listens.begin, end = listens.end;
+			while ( begin !== end ) {
+				let value = begin.value;
+				if ( value.listen ) {
+					if ( value.origin === listen && (!ctx || value.ctx === ctx) ) {
+						this._length--;
+						listens_map.delete(value.id);
+						begin.value.listen = null;
+						r++;
+						break;
+					}
+				}
+				begin = begin.next;
+			}
+		}
+		else if ( typeof listen == 'string' ) { // by id delete 
+			let id = String(listen);
+			let listens_map = this._listens_map!;
+			let item = listens_map.get(id);
+			if ( item ) {
+				this._length--;
+				listens_map.delete(id);
+				item.value.listen = null; // clear
+				r++;
+			}
+		}
+		else { //
+			throw new Error('Bad argument.');
 		}
 		return r;
 	}
 
+	/**
+	 * Remove all listeners related to `ctx` on this noticer
+	*/
+	offByCtx(ctx: object): Uint {
+		let r = 0;
+		let listens = this._listens!;
+		let listens_map = this._listens_map!;
+		let begin = listens.begin;
+		let end = listens.end;
+		// 要卸载这个范围上相关的侦听器,包括`EventNoticer`代理
+		while ( begin !== end ) {
+			let value = begin.value;
+			if ( value.listen ) {
+				if ( value.ctx === ctx ) {
+					this._length--;
+					listens_map.delete(value.id);
+					begin.value.listen = null; // break; // clear
+					r++;
+				}
+			}
+			begin = begin.next;
+		}
+		return r;
+	}
 }
 
-export const VOID = {} as any;
-
-const PREFIX = 'm_on';
+const PREFIX = '_on';
 const FIND_REG = new RegExp('^' + PREFIX);
 
 /**
  * @class Notification
+ *
+ * This is a collection of events `EventNoticer`, event triggering and response center
+ *
+ * Derived types inherited from it can use the `@event` keyword to declare member events
+ *
  */
-export class Notification<E = DefaultEvent> {
-
+export class Notification<E extends Event = Event> {
 	/**
-	 * @func getNoticer
+	 * @method getNoticer(name)
 	 */
 	getNoticer(name: string): EventNoticer<E> {
-		var noticer = (<any>this)[PREFIX + name];
-		if (!noticer) {
-			noticer = new EventNoticer<E>(name, this as any);
-			(<any>this)[PREFIX + name] = noticer;
+		let key = PREFIX + name;
+		let noticer = (this as any)[key];
+		if ( ! noticer ) {
+			noticer = new EventNoticer<E>(name, this as SenderOf<E>);
+			(this as any)[key] = noticer;
 		}
 		return noticer;
 	}
 
 	/**
-	 * @func hasNoticer
+	 * @method hasNoticer(name)bool
 	 */
 	hasNoticer(name: string) {
 		return (PREFIX + name) in this;
 	}
 
 	/**
-	 * @func addDefaultListener
+	 * @method addDefaultListener(name,listen)
 	 */
 	addDefaultListener(name: string, listen: Listen<E> | null) {
 		if (listen) {
@@ -590,112 +540,128 @@ export class Notification<E = DefaultEvent> {
 	}
 
 	/**
-	 * @func addEventListener(name, listen[,scope[,id]])
+	 * call: [`EventNoticer.on(listen,ctxOrId?,id?)`]
 	 */
-	addEventListener<Scope extends object>(name: string, listen: Listen<E, Scope>, scopeOrId?: Scope | ListenID, id?: ListenID) {
-		var del = this.getNoticer(name);
-		var r = del.on(listen, scopeOrId, id);
+	addEventListener<Ctx extends object>(name: string, listen: Listen<E, Ctx>, ctxOrId?: Ctx | string, id?: string): string {
+		let del = this.getNoticer(name);
+		let r = del.on(listen, ctxOrId, id);
 		this.triggerListenerChange(name, del.length, 1);
 		return r;
 	}
 
 	/**
-	 * @func addEventListenerOnce(name, listen[,scope[,id]])
+	 * call: [`EventNoticer.on2(listen,ctxOrId?,id?)`]
 	 */
-	addEventListenerOnce<Scope extends object>(name: string, listen: Listen<E, Scope>, scopeOrId?: Scope | ListenID, id?: ListenID) {
-		var del = this.getNoticer(name);
-		var r = del.once(listen, scopeOrId, id);
+	addEventListener2<Ctx extends object>(name: string, listen: Listen2<E, Ctx>, ctxOrId?: Ctx | string, id?: string): string {
+		let del = this.getNoticer(name);
+		let r = del.on2(listen, ctxOrId, id);
 		this.triggerListenerChange(name, del.length, 1);
 		return r;
 	}
 
-	/**
-	 * @func addEventListener2(name, listen[,scope[,id]])
-	 */
-	addEventListener2<Scope extends object>(name: string, listen: Listen2<E, Scope>, scopeOrId?: Scope | ListenID, id?: ListenID) {
-		var del = this.getNoticer(name);
-		var r = del.on2(listen, scopeOrId, id);
-		this.triggerListenerChange(name, del.length, 1);
-		return r;
-	}
-
-	/**
-	 * @func addEventListenerOnce2(name, listen[,scope[,id]])
-	 */
-	addEventListenerOnce2<Scope extends object>(name: string, listen: Listen2<E, Scope>, scopeOrId?: Scope | ListenID, id?: ListenID) {
-		var del = this.getNoticer(name);
-		var r = del.once2(listen, scopeOrId, id);
-		this.triggerListenerChange(name, del.length, 1);
-		return r;
-	}
-
-	addEventForward(name: string, noticer: EventNoticer<E>, id?: ListenID) {
-		var del = this.getNoticer(name);
-		var r = del.forward(noticer, id);
-		this.triggerListenerChange(name, del.length, 1);
-		return r;
-	}
-
-	addEventForwardOnce(noticer: EventNoticer<E>, id?: ListenID) {
-		var del = this.getNoticer(noticer.name);
-		var r = del.forwardOnce(noticer, id);
-		this.triggerListenerChange(noticer.name, del.length, 1);
-		return r;
-	}
-
-	/**
-	* @func trigger 通知事监听器
-	* @arg name {String}       事件名称
-	* @arg data {Object}       要发送的消数据
+	/** 
+	 * call: [`EventNoticer.forward(noticer,id?)`]
 	*/
-	trigger(name: string, data?: any) {
+	addEventForward(name: string, noticer: EventNoticer<E>, id?: string): string {
+		let del = this.getNoticer(name);
+		let r = del.forward(noticer, id);
+		this.triggerListenerChange(name, del.length, 1);
+		return r;
+	}
+
+	/**
+	 * call: [`EventNoticer.setLifespan(id,lifespan)`]
+	 */
+	setEventListenerLifespan(name: string, id: string, lifespan: Uint = 1) {
+		let noticer = (this as any)[PREFIX + name] as EventNoticer<E>;
+		if (noticer)
+			noticer.setLifespan(id, lifespan);
+	}
+
+	/**
+	* Trigger an event by event name --> [`EventNoticer.trigger(data)`]
+	*/
+	trigger(name: string, data: DataOf<E>) {
 		this.triggerWithEvent(name, new Event(data) as unknown as E);
 	}
 
 	/**
-	* @func triggerWithEvent 通知事监听器
-	* @arg name {String}       事件名称
-	* @arg event {Event}       Event 
+	* Trigger an event by name and [`Event`] --> [`EventNoticer.triggerWithEvent(event)`]
 	*/
 	triggerWithEvent(name: string, event: E) {
-		var noticer = (this as any)[PREFIX + name] as EventNoticer<E>;
+		let noticer = (this as any)[PREFIX + name] as EventNoticer<E>;
 		if (noticer) {
 			noticer.triggerWithEvent(event);
 		}
 	}
 
 	/**
-	 * @func removeEventListener(name,[func[,scope]])
-	 */
-	removeEventListener(name: string, listen?: ListenID | Function | object, scope?: object) {
-		var noticer = (this as any)[PREFIX + name] as EventNoticer<E>;
+	 * Remove listener function
+	 * @param name      Event name
+	 * @param listen?   It can be a listener function/id alias.
+	 *                   If no parameter is passed, all listeners will be uninstalled.
+	 * @param ctx?      Context object, only valid when `listen` is a function
+	*/
+	removeEventListener(name: string, listen?: Function | string, ctx?: object) {
+		let noticer = (this as any)[PREFIX + name] as EventNoticer<E>;
 		if (noticer) {
-			noticer.off(listen, scope);
+			noticer.off(listen, ctx);
 			this.triggerListenerChange(name, noticer.length, -1);
 		}
 	}
 
 	/**
-	 * @func removeEventListenerWithScope(scope) 卸载notification上所有与scope相关的侦听器
-	 * @arg scope {Object}
+	 * Delete all listeners related to `ctx` on `notification`
+	 *
+	 * Actually traverse and call the [`EventNoticer.offByCtx(ctx)`] method
+	 *
+	 * @example
+	 *
+	 * ```ts
+	 * import event from 'quark/event';
+	 * 
+	 * class TestNotification extends Notification {
+	 * 	\@event readonly onChange;
+	 * }
+	 *
+	 * var notification = new TestNotification();
+	 * // Prints: responseonChange 0 100
+	 * notification.onChange = function(ev) { // add default listener
+	 * 	console.log('responseonChange 0', ev.data)
+	 * }
+	 * notification.triggerChange(100);
+	 *
+	 * // Prints: 
+	 * // responseonChange 0 200
+	 * // responseonChange 1
+	 * notification.onChange.on(function(ev) {
+	 * 	console.log('responseonChange 1')
+	 * })
+	 * notification.triggerWithEvent('change', new Event(200));
+	 *
+	 * var noticer = notification.onChange;
+	 * noticer.off(0) // delete default listener
+	 * // Prints: responseonChange 1
+	 * notification.triggerChange();
+	 *
+	 * ```
 	 */
-	removeEventListenerWithScope(scope: object) {
-		for (let noticer of this.allNoticers()) {
-			noticer.off(scope);
+	removeEventListenerByCtx(ctx: object) {
+		for ( let noticer of this.allNoticers() ) {
+			noticer.offByCtx(ctx);
 			this.triggerListenerChange(noticer.name, noticer.length, -1);
 		}
 	}
 
 	/**
-	 * @func allNoticers() # Get all event noticer
-	 * @ret {Array}
+	 * Get all of [`EventNoticer`]
 	 */
-	allNoticers() {
-		var result: EventNoticer<E>[] = [];
-		for (var i in this) {
-			if (FIND_REG.test(i)) {
-				var noticer = this[i];
-				if (noticer instanceof EventNoticer) {
+	allNoticers(): EventNoticer<E>[] {
+		let result: EventNoticer<E>[] = [];
+		for ( let i in this ) {
+			if ( FIND_REG.test(i) ) {
+				let noticer = this[i];
+				if ( noticer instanceof EventNoticer ) {
 					result.push(noticer);
 				}
 			}
@@ -704,27 +670,25 @@ export class Notification<E = DefaultEvent> {
 	}
 
 	/**
-	 * @func triggerListenerChange
-	 */
-	triggerListenerChange(name: string, count: number, change: number) {/*NOOP*/ }
-
+	*/
+	triggerListenerChange(name: string, count: Uint, change: Uint) {}
 }
 
 /**
- * typescript decorator
+ * Typescript decorator
+ * @decorator
 */
 export function event(target: any, name: string) {
 	if (name.substring(0, 2) !== 'on') {
 		throw new Error(`event name incorrect format`);
 	}
-	var event = name.substring(2);
+	let event = name.substring(2);
 	Object.defineProperty(target, name, {
 		configurable: false,
 		enumerable: true,
 		get() { return this.getNoticer(event) },
 		set(listen: Function | null) {
-			if (listen !== VOID)
-				this.addDefaultListener(event, listen);
+			this.addDefaultListener(event, listen);
 		},
 	});
 }

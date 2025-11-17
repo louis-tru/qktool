@@ -59,20 +59,20 @@ interface Api {
 function gen_func(queue: List<QValue>, api: Api) {
 	return function(buffer: Buffer): Promise<Buffer> {
 		return new Promise((resolve, reject)=>{
-			var item = queue.push({ resolve, reject });
+			var item = queue.pushBack({ resolve, reject });
 			api(buffer, function (error, data) {
-				(<QValue>item.value).result = { error, data };
-				var first = queue.first;
+				item.value.result = { error, data };
+				var first = queue.front;
 				while (first) {
-					var { result, resolve, reject } = (<QValue>first.value);
+					var { result, resolve, reject } = first;
 					if (result) {
 						if (result.error) {
 							reject(result.error);
 						} else {
 							resolve(<Buffer>result.data);
 						}
-						queue.shift();
-						first = queue.first;
+						queue.popFront();
+						first = queue.front;
 					} else {
 						break;
 					}

@@ -35,7 +35,7 @@ import { Types } from '../data';
 import { ConversationBasic, KEEP_ALIVE_TIME } from '../_conv';
 export * from '../_conv';
 import { Signer } from '../../request';
-import { EventNoticer } from '../../event';
+import { EventNoticer, Event } from '../../event';
 import * as cli from './index';
 
 var USE_GZIP_DATA = false;
@@ -51,7 +51,7 @@ export abstract class WSConversation extends ConversationBasic {
 	protected m_url: URL;
 	private   m_autoReconnect = 0; // reconnect time
 
-	readonly onError = new EventNoticer<Error>('Error', this);
+	readonly onError = new EventNoticer<Event<WSConversation, Error>>('Error', this);
 
 	get autoReconnect() {
 		return this.m_autoReconnect;

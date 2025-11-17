@@ -35,7 +35,7 @@ import {Query, Field} from './query';
 import {OutgoingPacket} from './packet';
 import { Connection } from './pool';
 import { Constants, Packet } from './parser';
-import {EventNoticer} from '../event';
+import {EventNoticer,Event} from '../event';
 import errno from '../errno';
 import {Options, default_options} from './opts';
 
@@ -216,7 +216,7 @@ export class Mysql implements Database {
 	}
 
 	readonly options: Options;
-	readonly onError = new EventNoticer<Error>('Error', this);
+	readonly onError = new EventNoticer<Event<Mysql, Error>>('Error', this);
 
 		/**
 		* constructor function

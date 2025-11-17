@@ -362,11 +362,11 @@ export class Connection {
 			return utils.nextTick(cb, null, this);
 		}
 		// wait ready
-		this._onReady.once(()=>{
+		const id = this._onReady.on(()=>{
 			this.onError.off();
 			utils.nextTick(cb, null, this);
 		});
-		this.onError.once(e=>cb(e.data));
+		this._onReady.setLifespan(id, 1);
 	}
 
 	/**

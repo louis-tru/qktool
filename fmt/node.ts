@@ -322,7 +322,9 @@ export class FNodeRemoteClient extends cli.WSClient {
 	async _init() {
 		try {
 			var {id,time}: {id: string, time: number} = await Promise.race([new Promise<any>((resolve)=>{
-				this.addEventListenerOnce('InitComplete', e=>resolve(e.data));
+				// only listen once
+				this.setEventListenerLifespan('InitComplete',
+					this.addEventListener('InitComplete', e=>resolve(e.data)), 1);
 			}), utils.sleep(5e3, {id:0})]);
 			utils.assert(id, errno.ERR_FNODE_CONNECT_TIMEOUT);
 			this.m_fnode = new FNodeRemote(this.m_center, this as unknown as FNodeRemoteIMPL, id);
