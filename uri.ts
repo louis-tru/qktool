@@ -857,6 +857,13 @@ export default {
 	isAbsolute: isAbsolute, // func
 
 	/**
+	 * full filename
+	 */
+	basename(path?: string) {
+		return get_path(path).basename;
+	},
+
+	/**
 	 * Get dirname
 	 */
 	dirname(path?: string): string {
