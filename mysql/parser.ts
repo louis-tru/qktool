@@ -30,6 +30,7 @@
 
 import {EventNoticer,Event} from '../event';
 import util from '../util';
+import bf,{Buffer} from '../buffer';
 
 const POWS = [1, 256, 65536, 16777216];
 
@@ -325,7 +326,7 @@ export class Parser {
 					break;
 				case 5: // GREETING_SCRAMBLE_BUFF_1:
 					if (packet.index == 0) {
-						packetData.scrambleBuffer = Buffer.alloc(8 + 12);
+						packetData.scrambleBuffer = bf.alloc(8 + 12);
 					}
 
 					// 8 bytes
@@ -704,7 +705,7 @@ export class Parser {
 					packetData.columnLength = this._lengthCoded(c, packetData.columnLength);
 
 					if (!packetData.columnLength && !this._lengthCodedLength) {
-						packet.onData.trigger({ buffer: packetData.columnLength === undefined ? null : Buffer.alloc(0), remaining: 0 });
+						packet.onData.trigger({ buffer: packetData.columnLength === undefined ? null : bf.alloc(0), remaining: 0 });
 						if (packet.received < packet.length) {
 							self._advance(Constants.COLUMN_VALUE_LENGTH);
 						} else {

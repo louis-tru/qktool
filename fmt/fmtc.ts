@@ -30,7 +30,7 @@
 
 import utils from '../util';
 import errno from '../errno';
-import * as s from '../_server';
+import * as s from '../node/_server';
 import * as center from './center';
 import * as _center from './_center';
 

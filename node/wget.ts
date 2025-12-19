@@ -28,14 +28,14 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import util from './util';
-import {List} from './event';
+import util from '../util';
+import {List} from '../event';
 import * as http from 'http';
 import * as https from 'https';
 import * as url from 'url';
 import * as fs from 'fs';
-import errno from './errno';
-import request from './request';
+import errno from '../errno';
+import request from '../request';
 
 export interface Options {
 	renewal?: boolean;

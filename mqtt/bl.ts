@@ -29,6 +29,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 import { Duplex as DuplexStream } from 'stream';
+import bf,{Buffer,Encoding} from '../buffer';
 
 export type AppenData = Buffer | BufferList | Buffer[] | number[] | number | string;
 
@@ -84,7 +85,7 @@ export default class BufferList extends DuplexStream {
 	append(buf: AppenData) {
 		var i = 0
 	
-		if (Buffer.isBuffer(buf)) {
+		if (bf.isBuffer(buf)) {
 			this._appendBuffer(buf);
 		} else if (Array.isArray(buf)) {
 			for (; i < buf.length; i++)
@@ -99,7 +100,7 @@ export default class BufferList extends DuplexStream {
 			if (typeof buf == 'number')
 				buf = buf.toString();
 	
-			this._appendBuffer(Buffer.from(buf));
+			this._appendBuffer(bf.from(buf));
 		}
 	
 		return this
@@ -154,9 +155,9 @@ export default class BufferList extends DuplexStream {
 		if (typeof srcEnd != 'number' || srcEnd > this.length)
 			srcEnd = this.length
 		if (srcStart >= this.length)
-			return dst || Buffer.alloc(0)
+			return dst || bf.alloc(0)
 		if (srcEnd <= 0)
-			return dst || Buffer.alloc(0)
+			return dst || bf.alloc(0)
 	
 		var copy   = !!dst
 			, off    = this._offset(srcStart)
@@ -172,7 +173,7 @@ export default class BufferList extends DuplexStream {
 			if (!dst) { // slice, but full concat if multiple buffers
 				return this._bufs.length === 1
 					? this._bufs[0]
-					: Buffer.concat(this._bufs, this.length)
+					: bf.concat(this._bufs, this.length)
 			}
 	
 			// copy, need to copy individual buffers
@@ -195,7 +196,7 @@ export default class BufferList extends DuplexStream {
 		}
 	
 		if (!dst) // a slice, we need something to copy in to
-			dst = Buffer.allocUnsafe(len)
+			dst = bf.alloc(len)
 	
 		for (i = off[0]; i < this._bufs.length; i++) {
 			l = this._bufs[i].length - start
@@ -241,7 +242,7 @@ export default class BufferList extends DuplexStream {
 		return new BufferList(buffers)
 	}
 	
-	toString(encoding?: BufferEncoding, start?: number, end?: number) {
+	toString(encoding?: Encoding, start?: number, end?: number) {
 		return this.slice(start, end).toString(encoding)
 	}
 	

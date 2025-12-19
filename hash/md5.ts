@@ -30,7 +30,7 @@
 
 import utils from '../util';
 import util from './util';
-import buffer, {IBuffer, Bytes} from '../buffer';
+import buffer, {Buffer,Bytes} from '../buffer';
 
 const {bin2str,bin2hex,bin2b64} = util;
 
@@ -42,7 +42,7 @@ export function md5_hex(s: string | Bytes) { return bin2hex(md5(s)) }
 export function md5_b64(s: string | Bytes) { return bin2b64(md5(s)) }
 export function md5_str(s: string | Bytes) { return bin2str(md5(s)) }
 
-export var md5: (s: string | Bytes)=>IBuffer;
+export var md5: (s: string | Bytes)=>Buffer;
 
 if (utils.isNode) {
 	let crypto = require('crypto');

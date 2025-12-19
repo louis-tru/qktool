@@ -2,7 +2,7 @@
 
 import * as fs from './fs';
 import * as path from 'path';
-import { options, helpInfo, defOpts } from './arguments';
+import { options, helpInfo, defOpts } from '../arguments';
 import { execSync } from './syscall';
 
 defOpts('help', 0,									'--help, --help print help info');

@@ -29,12 +29,12 @@
  * ***** END LICENSE BLOCK ***** */
 
 import utils from '../util';
-import {Service} from '../service';
-import {Session} from '../session';
+import {Service} from '../node/service';
+import {Session} from '../node/session';
 import errno from '../errno';
 import {Types, DataBuilder, Data} from './data';
 import * as conv from './conv';
-import {RuleResult} from '../router'
+import {RuleResult} from '../node/router'
 
 export const METHOD_CALL_TIMEOUT = 12e4; // 120s
 

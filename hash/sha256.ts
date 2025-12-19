@@ -30,7 +30,7 @@
 
 import utils from '../util';
 import util from './util';
-import buffer, {IBuffer, Bytes} from '../buffer';
+import buffer, {Buffer,Bytes} from '../buffer';
 
 const {bin2str,bin2hex,bin2b64} = util;
 
@@ -42,7 +42,7 @@ export function sha256_hex(s: string | Bytes) { return bin2hex(sha256(s)) }
 export function sha256_b64(s: string | Bytes) { return bin2b64(sha256(s)) }
 export function sha256_str(s: string | Bytes) { return bin2str(sha256(s)) }
 
-export var sha256: (s: string | Bytes)=>IBuffer;
+export var sha256: (s: string | Bytes)=>Buffer;
 
 if (utils.isNode) {
 	let crypto = require('crypto');

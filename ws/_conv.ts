@@ -30,7 +30,7 @@
 
 import utils from '../util';
 import { DataBuilder, Types, Data } from './data';
-import buffer, { Zero, IBuffer } from '../buffer';
+import buffer, { Zero, Buffer } from '../buffer';
 import {EventNoticer, Event} from '../event';
 
 export const KEEP_ALIVE_TIME = 5e4; // 50s
@@ -54,8 +54,8 @@ export abstract class ConversationBasic {
 
 	readonly onClose = new EventNoticer('Close', this);
 	readonly onOpen = new EventNoticer('Open', this);
-	readonly onPing = new EventNoticer<Event<ConversationBasic, IBuffer>>('Ping', this);
-	readonly onPong = new EventNoticer<Event<ConversationBasic, IBuffer>>('Pong', this);
+	readonly onPing = new EventNoticer<Event<ConversationBasic, Buffer>>('Ping', this);
+	readonly onPong = new EventNoticer<Event<ConversationBasic, Buffer>>('Pong', this);
 	readonly onDrain = new EventNoticer('Drain', this);
 	readonly onOverflow = new EventNoticer('Overflow', this);
 
@@ -103,7 +103,7 @@ export abstract class ConversationBasic {
 	 * @arg packet {String|Buffer}
 	 * @arg {Boolean} isText
 	 */
-	protected async handlePacket(packet: IBuffer | string, isText: boolean) {
+	protected async handlePacket(packet: Buffer | string, isText: boolean) {
 		this.m_last_packet_time = Date.now();
 		var data = await DataBuilder.parse(packet, isText, this.isGzip);
 		if (!data)
@@ -132,14 +132,14 @@ export abstract class ConversationBasic {
 		}
 	}
 
-	handlePing(data: IBuffer) {
+	handlePing(data: Buffer) {
 		this.m_last_packet_time = Date.now();
 		if (this.replyPong)
 			this.pong().catch(console.warn);
 		this.onPing.trigger(data);
 	}
 
-	handlePong(data: IBuffer) {
+	handlePong(data: Buffer) {
 		this.m_last_packet_time = Date.now();
 		this.onPong.trigger(data);
 	}
@@ -150,7 +150,7 @@ export abstract class ConversationBasic {
 		await this.send(buffer.from(bf));
 	}
 
-	abstract send(data: IBuffer): Promise<void>;
+	abstract send(data: Buffer): Promise<void>;
 	abstract ping(): Promise<void>;
 	abstract pong(): Promise<void>;
 	abstract close(): void;

@@ -57,12 +57,9 @@ let gc: ()=>void = unrealized;
 
 export type Optopns = Dict<string|string[]>;
 
-const PREFIX = 'file:///';
 let options: Optopns = {};  // start options
 let config: Dict | null = null;
-let _cwd:()=>string;
-let _chdir:(cwd:string)=>boolean;
-let win32: boolean = false;
+let isWin32: boolean = false;
 let _quark_util: any;
 let debug = false;
 
@@ -160,34 +157,22 @@ function parse_options(argv: string[]) {
 }
 
 if (isQuark) {
-	_quark_util = __binding__('_uitl');
-	win32 = _quark_util.default.platform == 'win32';
+	_quark_util = __binding__('_util');
+	isWin32 = _quark_util.default.platform == 'win32';
 	argv = _quark_util.default.argv;
 	debug = _quark_util.default.debug;
 	options = _quark_util.default.options;
 	platform = _quark_util.default.platform as Platform;
-	gc = _quark_util.default.garbageCollection;
-	_cwd = _quark_util.cwd;
-	_chdir = _quark_util.chdir;
-	_process = _require('quark/uitl')._runtimeEvents;
+	gc = _quark_util.default.gc;
+	_process = _require('quark/uitl').__runtime;
 }
 else if (isNode) {
 	let nodeProcess = process;
 	platform = nodeProcess.platform as any;
 	process.execArgv = nodeProcess.execArgv || [];
 	argv = process.argv || [];
-	win32 = process.platform == 'win32';
+	isWin32 = process.platform == 'win32';
 	parse_options(argv.slice(1));
-	_cwd = win32 ? function() {
-		return PREFIX + process.cwd().replace(/\\/g, '/');
-	}: function() {
-		return PREFIX + process.cwd().substring(1);
-	};
-	_chdir = function(path) {
-		path = classicPath(path);
-		process.chdir(path);
-		return process.cwd() == path;
-	};
 	class NodeProcess extends Notification implements IProcess {
 		getNoticer(name: 'BeforeExit'|'Exit'|'UncaughtException'|'UnhandledRejection') {
 			if (!this.hasNoticer(name)) {
@@ -232,11 +217,6 @@ else if (isWeb) {
 	};
 	platform = 'web' as Platform;
 	argv = [location.origin + location.pathname].concat(location.search.substring(1).split('&'));
-	let dirname = location.pathname.substring(0, location.pathname.lastIndexOf('/'));
-	let cwdPath = location.origin + dirname;
-	_cwd = function() { return cwdPath };
-	_chdir = function() { return false };
-
 	class WebProcess extends Notification implements IProcess {
 		getNoticer(name: 'BeforeExit'|'Exit'|'UncaughtException'|'UnhandledRejection') {
 			if (!this.hasNoticer(name)) {
@@ -279,140 +259,6 @@ if (isNode) {
 	};
 }
 
-export const cwd = _cwd;
-export const chdir = _chdir;
-
-export const classicPath = win32 ? function(url: string) {
-	return url.replace(/^file:\/\//i, '').replace(/^\/([a-z]:)?/i, '$1').replace(/\//g, '\\');
-} : function(url: string) {
-	return url.replace(/^file:\/\//i, '');
-};
-
-const join_path = win32 ? function(args: string[]): string {
-	for (var i = 0, ls = []; i < args.length; i++) {
-		var item = args[i];
-		if (item) ls.push(item.replace(/\\/g, '/'));
-	}
-	return ls.join('/');
-}: function(args: string[]): string {
-	for (var i = 0, ls = []; i < args.length; i++) {
-		var item = args[i];
-		if (item) ls.push(item);
-	}
-	return ls.join('/');
-};
-
-const matchs = win32 ? {
-	resolve: /^((\/|[a-z]:)|([a-z]{2,}:\/\/[^\/]+)|((file|zip):\/\/\/))/i,
-	isAbsolute: /^([\/\\]|[a-z]:|[a-z]{2,}:\/\/[^\/]+|(file|zip):\/\/\/)/i,
-	isLocal: /^([\/\\]|[a-z]:|(file|zip):\/\/\/)/i,
-}: {
-	resolve: /^((\/)|([a-z]{2,}:\/\/[^\/]+)|((file|zip):\/\/\/))/i,
-	isAbsolute: /^(\/|[a-z]{2,}:\/\/[^\/]+|(file|zip):\/\/\/)/i,
-	isLocal: /^(\/|(file|zip):\/\/\/)/i,
-};
-
-/** 
- * normalizePath
- */
-export function normalizePath(path: string, retain_level: boolean = false): string {
-	var ls = path.split('/');
-	var rev = [];
-	var up = 0;
-	for (var i = ls.length - 1; i > -1; i--) {
-		var v = ls[i];
-		if (v && v != '.') {
-			if (v == '..') // set up
-				up++;
-			else if (up === 0) // no up item
-				rev.push(v);
-			else // un up
-				up--;
-		}
-	}
-	path = rev.reverse().join('/');
-
-	return (retain_level ? new Array(up + 1).join('../') + path : path);
-}
-
-/**
- * return format path
- */
-export function formatPath(...args: string[]) {
-	var path = join_path(args);
-	var prefix = '';
-	// Find absolute path
-	var mat = path.match(matchs.resolve);
-	var slash = '';
-	// resolve: /^((\/|[a-z]:)|([a-z]{2,}:\/\/[^\/]+)|((file|zip):\/\/\/))/i,
-	// resolve: /^((\/)|([a-z]{2,}:\/\/[^\/]+)|((file|zip):\/\/\/))/i,
-	if (mat) {
-		if (mat[2]) { // local absolute path /
-			if (win32 && mat[2] != '/') { // windows d:\
-				prefix = PREFIX + mat[2] + '/';
-				path = path.substring(2);
-			} else {
-				if (isWeb) {
-					prefix = origin + '/';
-				} else {
-					prefix = PREFIX; //'file:///';
-				}
-			}
-		} else {
-			if (mat[4]) { // local file protocol
-				prefix = mat[4];
-			} else { // network protocol
-				prefix = mat[0];
-				slash = '/';
-			}
-			// if (prefix == path.length)
-			if (prefix == path) // file:///
-				return prefix;
-			path = path.substring(prefix.length);
-		}
-	} else { // Relative path, no network protocol
-		var cwd = _cwd();
-		if (isWeb) {
-			prefix = origin + '/';
-			path = cwd.substring(prefix.length) + '/' + path;
-		} else {
-			if (win32) {
-				prefix += cwd.substring(0,10) + '/'; // 'file:///d:/';
-				path = cwd.substring(11) + '/' + path;
-			} else {
-				prefix = PREFIX; // 'file:///';
-				path = cwd.substring(8) + '/' + path;
-			}
-		}
-	}
-
-	// var suffix = path.length > 1 && path.substring(path.length - 1) == '/' ? '/' : '';
-	path = normalizePath(path);
-	return (path ? prefix + slash + path : prefix);// + suffix;
-}
-
-/**
- * @method is_absolute # 是否为绝对路径
- */
-export function isAbsolute(path: string): boolean {
-	return matchs.isAbsolute.test(path);
-}
-
-/**
- * @method is_local # 是否为本地路径
- */
-export function isLocal(path: string): boolean {
-	return matchs.isLocal.test(path);
-}
-
-export function isLocalZip(path: string): boolean {
-	return /^zip:\/\/\//i.test(path);
-}
-
-export function isNetwork(path: string): boolean {
-	return /^(https?):\/\/[^\/]+/i.test(path);
-}
-
 /**
  * Remove byte order marker. This catches EF BB BF (the UTF-8 BOM)
  * because the buffer-to-string conversion in `fs.readFileSync()`
@@ -444,7 +290,7 @@ let configDir = '';
 export function getConfig(): Dict {
 	if (!config) {
 		if (isQuark) {
-			config = _quark_util.config;
+			config = _quark_util.getConfig();
 		} else if (isNode) {
 			if (configDir) {
 				config = readConfigFile(configDir + '/.config', configDir + '/config');
@@ -455,7 +301,15 @@ export function getConfig(): Dict {
 					config = readConfigFile(mainDir + '/.config', mainDir + '/config');
 				}
 			}
-			config = config || readConfigFile(cwd() + '/.config', cwd() + '/config') || {};
+
+			const PREFIX = 'file:///';
+			const _cwd = isWin32 ? function() {
+				return PREFIX + process.cwd().replace(/\\/g, '/');
+			}: function() {
+				return PREFIX + process.cwd().substring(1);
+			};
+
+			config = config || readConfigFile(_cwd() + '/.config', _cwd() + '/config') || {};
 
 			// rend extend config file
 			if (config && config.extendConfigPath) {
@@ -527,8 +381,8 @@ export default {
 	isNode, isQuark,isWeb, webFlags,
 	argv,
 	options,
-	nextTick,
 	unrealized,
+	nextTick,
 	exit: (code?: number)=>{ _process.exit(code) },
 	sleep, gc,
 	runScript: unrealized,

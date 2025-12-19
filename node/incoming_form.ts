@@ -28,15 +28,15 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import {EventNoticer,Event} from './event';
+import {EventNoticer,Event} from '../event';
 import * as fs from 'fs';
 import * as path from 'path';
 import {StringDecoder} from 'string_decoder';
 import {WriteStream} from 'fs';
 import * as querystring from 'querystring';
 import * as crypto from 'crypto';
-import {parseJSON} from './request';
-import Document from './xml';
+import {parseJSON} from '../request';
+import Document from '../xml';
 import * as hs from './http_service';
 import * as http from 'http';
 

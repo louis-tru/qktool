@@ -33,7 +33,7 @@ import * as path from 'path';
 import Document, { NODE_TYPE, Element, Node, Attribute, CDATASection } from '../xml';
 import { Database, Result, escape } from '.';
 import { default_options as mysqlDefaultOptions, Options as MysqlOptions } from '../mysql'
-import * as fs from '../fs';
+import * as fs from '../node/fs';
 import {Model,Collection, FetchOptions, ModelBasic, ID} from './model';
 import {Mysql} from '../mysql';
 

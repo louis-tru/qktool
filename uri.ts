@@ -28,21 +28,206 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import * as _util from './_util';
+const PREFIX = 'file:///';
+const isQuark: boolean = !!globalThis.__binding__;
+const isNode: boolean = !!(globalThis as any).process;
+const isWeb: boolean = !!globalThis.document;
 
-const isWeb = _util.default.isWeb;
+function unrealized(): any {
+	throw new Error('Unrealized function');
+}
 
-function split_path(self: any) {
-	if (self._is_split) return;
-	self._is_split = true;
-	
-	var value = self._value;
-	var val = '';
-	var i = value.indexOf('?');
-	
+let _win32: boolean = false;
+let _executable: ()=>string = unrealized;
+let _documents: (path?: string)=>string = unrealized;
+let _temp: (path?: string)=>string = unrealized;
+let _resources: (path?: string)=>string = unrealized;
+let _cwd: ()=>string = unrealized;
+let _chdir: (path: string)=>boolean = unrealized;
+
+if (isQuark) {
+	const _fs = __binding__('_fs');
+	_win32 = __binding__('_init').platform == 'win32';
+	_executable = _fs.executable;
+	_documents = _fs.documents;
+	_temp = _fs.temp;
+	_resources = _fs.resources;
+	_cwd = _fs.cwd;
+	_chdir = _fs.chdir;
+} else if (isNode) {
+	const process = (globalThis as any).process;
+	_win32 = process.platform == 'win32';
+	_cwd = _win32 ? function() {
+		return PREFIX + process.cwd().replace(/\\/g, '/');
+	}: function() {
+		return PREFIX + process.cwd().substring(1);
+	};
+	_chdir = function(path) {
+		path = classicPath(path);
+		process.chdir(path);
+		return process.cwd() == path;
+	};
+} else if (isWeb) {
+	let dirname = location.pathname.substring(0, location.pathname.lastIndexOf('/'));
+	let cwdPath = location.origin + dirname;
+	_cwd = function() { return cwdPath };
+	_chdir = function() { return false };
+} else {
+	throw new Error('no support');
+}
+
+const win32 = {
+	classicPath: function(url: string) {
+		return url.replace(/^file:\/\//i, '').replace(/^\/([a-z]:)?/i, '$1').replace(/\//g, '\\');
+	},
+	joinPath: function(args: any[]) {
+		let ls = [];
+		for (let i = 0; i < args.length; i++) {
+			let item = args[i];
+			if (item)
+				ls.push(item.replace(/\\/g, '/'));
+		}
+		return ls.join('/');
+	},
+	resolve: /^((\/|[a-z]:)|([a-z]{2,}:\/\/[^\/]+)|((file|zip):\/\/\/))/i,
+	isAbsolute: /^([\/\\]|[a-z]:|[a-z]{2,}:\/\/[^\/]+|(file|zip):\/\/\/)/i,
+	isLocal: /^([\/\\]|[a-z]:|(file|zip):\/\/\/)/i,
+	delimiter: ';',
+};
+
+const posix = {
+	classicPath: function(url: string) {
+		return url.replace(/^file:\/\//i, '');
+	},
+	joinPath: function(args: any[]) {
+		let ls = [];
+		for (let i = 0; i < args.length; i++) {
+			let item = args[i];
+			if (item)
+				ls.push(item);
+		}
+		return ls.join('/');
+	},
+	resolve: /^((\/)|([a-z]{2,}:\/\/[^\/]+)|((file|zip):\/\/\/))/i,
+	isAbsolute: /^(\/|[a-z]{2,}:\/\/[^\/]+|(file|zip):\/\/\/)/i,
+	isLocal: /^(\/|(file|zip):\/\/\/)/i,
+	delimiter: ':',
+};
+
+const paths = _win32 ? win32: posix;
+
+export const classicPath = paths.classicPath;
+export const delimiter = paths.delimiter;
+
+/**
+ * normalizePath
+ */
+export function normalizePath(path: string, retain_level: boolean = false): string {
+	var ls = path.split('/');
+	var rev = [];
+	var up = 0;
+	for (var i = ls.length - 1; i > -1; i--) {
+		var v = ls[i];
+		if (v && v != '.') {
+			if (v == '..') // set up
+				up++;
+			else if (up === 0) // no up item
+				rev.push(v);
+			else // un up
+				up--;
+		}
+	}
+	path = rev.reverse().join('/');
+
+	return (retain_level ? new Array(up + 1).join('../') + path : path);
+}
+
+/**
+ * file:///home/louis/test.txt
+ * file:///d:/home/louis/test.txt
+ * http://google.com/test.txt
+ * return format path
+ */
+export function resolve(...args: string[]): string {
+	let path = paths.joinPath(args);
+	let prefix = '';
+	// Find absolute path
+	let mat = path.match(paths.resolve);
+	let slash = '';
+	// resolve: /^((\/|[a-z]:)|([a-z]{2,}:\/\/[^\/]+)|((file|zip):\/\/\/))/i,
+	// resolve: /^((\/)|([a-z]{2,}:\/\/[^\/]+)|((file|zip):\/\/\/))/i,
+	if (mat) {
+		if (mat[2]) { // local absolute path /
+			if (_win32 && mat[2] != '/') { // windows d:\
+				prefix = PREFIX + mat[2] + '/';
+				path = path.substring(2);
+			} else if (isWeb) {
+				prefix = origin + '/';
+			} else {
+				prefix = PREFIX; //'file:///';
+			}
+		} else {
+			if (mat[4]) { // local file protocol
+				prefix = mat[4];
+			} else { // network protocol
+				prefix = mat[0];
+				slash = '/';
+			}
+			// if (prefix == path.length)
+			if (prefix == path) // file:///
+				return prefix;
+			path = path.substring(prefix.length);
+		}
+	} else { // Relative path, no network protocol
+		let cwd = _cwd();
+		if (_win32) {
+			prefix += cwd.substring(0,10) + '/'; // 'file:///d:/';
+			path = cwd.substring(11) + '/' + path;
+		} else if (isWeb) {
+			prefix = origin + '/';
+			path = cwd.substring(prefix.length) + '/' + path;
+		} else {
+			prefix = PREFIX; // 'file:///';
+			path = cwd.substring(8) + '/' + path;
+		}
+	}
+	path = normalizePath(path);
+	return path ? prefix + slash + path : prefix;
+}
+
+/**
+ * Is it an absolute path?
+ */
+export function isAbsolute(path: string): boolean {
+	return paths.isAbsolute.test(path);
+}
+
+/**
+ * Is it a local path?
+ */
+export function isLocal(path: string): boolean {
+	return paths.isLocal.test(path);
+}
+
+export function isLocalZip(path: string): boolean { //!<
+	return /^zip:\/\/\//i.test(path);
+}
+
+export function isHttp(path: string): boolean { //!<
+	return /^(https?):\/\/[^\/]+/i.test(path);
+}
+
+function init_uri(self: any) {
+	if (self._is_init) return;
+	self._is_init = true;
+
+	let value = self._value;
+	let val = '';
+	let i = value.indexOf('?');
+
 	if (i != -1) {
 		val = value.substr(0, i);
-		var search = self._search = value.substr(i);
+		let search = self._search = value.substr(i);
 		i = search.indexOf('#');
 		if (i != -1) {
 			self._search = search.substr(0, i);
@@ -57,42 +242,27 @@ function split_path(self: any) {
 			val = value;
 		}
 	}
-	self._value = _util.formatPath(val);
-}
-
-function parse_base_ext_name(self: any) {
-	if (self._basename == -1) {
-		split_path(self);
-		var mat = self._value.match(/([^\/\\]+)?(\.[^\/\\\.]+)$|[^\/\\]+$/);
-		if (mat) {
-			self._basename = mat[0];
-			self._extname = mat[2] || '';
-		} else {
-			self._extname = self._basename = '';
-		}
-	}
+	self._value = resolve(val);
 }
 
 function parse_path(self: any) {
-	if (self._is_parse)
-		return;
+	if (self._is_parse) return;
 	self._is_parse = true;
+	init_uri(self);
 
-	split_path(self);
-
-	var mat = self._value.match(/^(([a-z]+:)\/\/)?(([^\/:]+)(?::(\d+))?)?(\/.*)?/);
+	let mat = self._value.match(/^(([a-z]+:)\/\/)?(([^\/:]+)(?::(\d+))?)?(\/.*)?/);
 	if (mat) {
 		self._protocol = mat[2] || '';
-		self._origin = mat[1] || '';
+		self._origin = mat[1] || ''; // file://
 
 		if ( mat[3] ) { // http:// or ftp:// or lib://
-			self._origin += mat[3];
+			self._origin += mat[3]; // http://quarks.cc
 			self._hostname = mat[4];
-			self._port = mat[5] ? mat[5] : '';
+			self._port = mat[5] || '';
 		}
 
-		var path = self._filename = mat[6] || '/';
-		var i = path.lastIndexOf('/');
+		let path = self._filename = mat[6] || '/';
+		let i = path.lastIndexOf('/');
 		if (i > 0) {
 			self._dirname = path.substr(0, i);
 		} else {
@@ -103,419 +273,704 @@ function parse_path(self: any) {
 	}
 }
 
-function parse_params(self: any, s1: string, s2: string, sp: string) {
-	if (self[s1])
-		return;
-	split_path(self);
-
-	let params: Dict = self[s1] = {};
-	if (self[s2][0] != sp) 
-		return;
-
-	for (let it of self[s2].substr(1).split('&')) {
-		let [k,v] = it.split('=');
-		let v2 = decodeURIComponent(v || '');
-		if (k in params) {
-			if (Array.isArray(params[ k ])) {
-				params[k].push(v2);
-			} else {
-				params[k] = [params[k], v2];
-			}
-		} else {
-			params[k] = v2;
-		}
+function parse_basename(self: any) {
+	if (self._basename != -1) return;
+	init_uri(self);
+	let mat = self._value.match(/([^\/\\]+)?(\.[^\/\\\.]+)$|[^\/\\]+$/);
+	if (mat) {
+		self._basename = mat[0];
+		self._extname = mat[2] || '';
+	} else {
+		self._extname = self._basename = '';
 	}
 }
 
 function querystringStringify(prefix: string, params: Dict) {
 	let rev = [];
 	for (let i in params) {
-		let val = params[i];
-		if (Array.isArray(val)) {
-			for (let j of val)
-				if (j !== undefined)
-					rev.push(i + '=' + encodeURIComponent(j));
-		} else if (val !== undefined) {
-			rev.push(i + '=' + encodeURIComponent(val));
-		}
+		rev.push(i + '=' + encodeURIComponent(params[i]));
 	}
 	return rev.length ? prefix + rev.join('&') : '';
 }
 
 /**
  * @class URL
+ * 
+ * URL Processing Tool Type
+ * 
+ * @example
+ * 
+ * ```ts
+ * // cwd: file:///var/data
+ * // Prints: file:///var/data/index.js
+ * var uri = new URL('index.js');
+ * console.log(uri.href);
+ * // Prints: http://quarks.cc/index.html?args=0
+ * var uri2 = new URL('http://quarks.cc/home/../index.html?args=0')
+ * console.log(uri2.href);
+ * // Prints: 
+ * // Error: Parse uri error, Illegal URL
+ * new URL('http://quarks.cc:').href
+ * ```
  */
 export class URL {
-	
+	private _value: string;
+	private _origin: string = '';
+	private _filename: string = '';
+	private _dirname: string = '';
+	private _basename: string = '';
+	private _extname: string = '';
+	private _search: string = '';
+	private _hash: string = '';
+	private _hostname: string = '';
+	private _port: string = '';
+	private _protocol: string = '';
+	private _params: Dict<string> | null = null;
+	private _hashParams: Dict<string> | null = null;
+
 	/**
-		* @arg [path] {String}
-		* @constructor
-		*/
+	 * @method constructor(path?:string)
+	 */
 	constructor(path: string = '') {
 		if (!path && isWeb) {
 			path = location.href;
 		}
-		(this as any)._value = path;
+		this._value = path;
 	}
-	
-	// href: "http://xxxx.xxx:81/v1.1.0/quark/path.js?sasasas&asasasa#sdsdsd"
-	get href(): string {
-		var self = this as any;
-		parse_path(self);
-		return self._origin + self._filename + self._search + self._hash;
-	}
-	
+
 	/**
-		* full path
-		* filename: "/D:/Documents/test.js"
-		*/
+	 * Get the complete URL, including parameters
+	 * 
+	 * href: "http://xxxx.xxx:81/v1.1.0/quark/path.js?sasasas&asasasa#sdsdsd"
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: http://quarks.cc/
+	 * console.log(new URL('http://quarks.cc/').href);
+	 * ```
+	 */
+	get href(): string {
+		parse_path(this);
+		return this._origin + this._filename + this._search + this._hash;
+	}
+
+	/**
+	 * Get full path name
+	 * 
+	 * filename: "/D:/Documents/test.js"
+	 * 
+	 * @example
+	 *
+	 * ```ts
+	 * // Prints: /aaa/bbbb/ccc/test.js
+	 * console.log(new URL('http://quarks.cc/aaa/bbbb/ccc/test.js').filename);
+	 * ```
+	*/
 	get filename(): string {
 		parse_path(this);
-		return  (<any>this)._filename;
+		return this._filename;
 	}
-	
+
 	/**
-	 * @get path /a/b/s/test.html?aaaaa=100
+	 * @get path:string /a/b/s/test.html?aaaaa=100
+	 * 
+	 * Get the path and include the parameter part
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: /aaa/bbbb/ccc/test.js?asas=asas
+	 * console.log(new URL('http://quarks.cc/aaa/bbbb/ccc/test.js?asas=asas').path);
+	 * ```
 	 */
 	get path(): string {
 		parse_path(this);
-		return (<any>this)._filename + (<any>this)._search;
+		return this._filename + this._search;
+	}
+
+	/**
+	 * Full path dir
+	 * 
+	 * dirname: "/D:/Documents"
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: /aaa/bbbb/ccc
+	 * console.log(new URL('http://quarks.cc/aaa/bbbb/ccc/test.js').dirname);
+	 * ```
+	 */
+	get dirname(): string {
+		parse_path(this);
+		return this._dirname;
+	}
+
+	/**
+	 * Get url query parameters
+	 * 
+	 * search: "?sasasas&asasasa"
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: ?a=A&b=B
+	 * console.log(new URL('http://quarks.cc/?a=A&b=B').search);
+	 * ```
+	*/
+	get search(): string {
+		init_uri(this);
+		return this._search;
+	}
+
+	/**
+	 * hash: "#sdsdsd"
+	 * 
+	 * Get hash parameters
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: #c=C&d=D
+	 * console.log(new URL('http://quarks.cc/?a=A&b=B#c=C&d=D').hash);
+	 * ```
+	 */
+	get hash(): string {
+		init_uri(this);
+		return this._hash;
+	}
+
+	/**
+	 * host: "quarks.cc:81"
+	 * 
+	 * Gets the host name and returns the host name with the port number
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: quarks.cc:80
+	 * console.log(new URL('http://quarks.cc:81/').host);
+	 * ```
+	 */
+	get host(): string {
+		parse_path(this);
+		return this._hostname + (this._port ? ':' + this._port : '');
+	}
+
+	/**
+	 * hostname: "quarks.cc"
+	 * 
+	 * Gets the host name, but does not return the port number
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: quarks.cc
+	 * console.log(new URL('http://quarks.cc:81/').host);
+	 * ```
+	 */
+	get hostname(): string {
+		parse_path(this);
+		return this._hostname;
+	}
+
+	/**
+	 * origin: "http://quarks.cc:81"
+	 * 
+	 * Get the uri origin, protocol+host
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: http://quarks.cc:81
+	 * console.log(new URL('http://quarks.cc:81/host/index.html').host);
+	 * // Prints: file://
+	 * console.log(new URL('file:///var/data/index.html').host);
+	 * ```
+	 */
+	get origin(): string {
+		parse_path(this);
+		return this._origin;
+	}
+
+	/**
+	 * Get path base name
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: index.html
+	 * console.log(new URL('file:///var/data/index.html').basename);
+	 * ```
+	 */
+	get basename(): string {
+		parse_basename(this);
+		return this._basename;
 	}
 	
 	/**
-		* full path dir
-		* dirname: "/D:/Documents"
-		*/
-	get dirname(): string {
-		parse_path(this);
-		return (<any>this)._dirname;
-	}
-	
-	// search: "?sasasas&asasasa"
-	get search(): string {
-		split_path(this);
-		return (<any>this)._search;
-	}
-	
-	// hash: "#sdsdsd"
-	get hash(): string {
-		split_path(this);
-		return (<any>this)._hash;
-	}
-	
-	// host: "quarks.cc:81"
-	get host(): string {
-		parse_path(this);
-		return (<any>this)._hostname + ((<any>this)._port ? ':' + (<any>this)._port : '');
-	}
-	
-	// hostname: "quarks.cc"
-	get hostname(): string {
-		parse_path(this);
-		return (<any>this)._hostname;
-	}
-	
-	// origin: "http://quarks.cc:81"
-	get origin(): string {
-		parse_path(this);
-		return (<any>this)._origin;
+	 * Get path extname
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: .html
+	 * console.log(new URL('file:///var/data/index.html').extname);
+	 * ```
+	 */
+	get extname(): string {
+		parse_basename(this);
+		return this._extname;
 	}
 
-	// get path base name 
-	get basename(): string {
-		parse_base_ext_name(this);
-		return (<any>this)._basename;
-	}
-	
-	// path extname
-	get extname(): string {
-		parse_base_ext_name(this);
-		return (<any>this)._extname;
-	}
-	
-	// port: "81"
+	/**
+	 * port: "81"
+	 * 
+	 * Get the host port number.
+	 * If the port number is not defined in the URL, an empty string is returned.
+	 * 
+	 * @example
+	 *
+	 * ```ts
+	 * // Prints: 81
+	 * console.log(new URL('http://quarks.cc:81').port);
+	 * // Prints If there is no port number, an empty string will be returned: ""
+	 * console.log(new URL('http://quarks.cc').port);
+	 * ```
+	 */
 	get port(): string {
 		parse_path(this);
-		return (<any>this)._port;
-	}
-	
-	// protocol: "http:"
-	get protocol(): string {
-		parse_path(this);
-		return (<any>this)._protocol;
+		return this._port;
 	}
 
+	/**
+	 * Get the protocol type string of the URL, For: `'http:'`|`'https'`|`'ftp:'`
+	 */
+	get protocol(): string {
+		parse_path(this);
+		return this._protocol;
+	}
+
+	/**
+	 * Returns a collection of query parameters as an object, or set
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints:
+	 * // {
+	 * //   a: "100",
+	 * //   b: "test"
+	 * // }
+	 * console.log(new URL('http://quarks.cc/?a=100&b=test').params);
+	 * ```
+	*/
 	get params(): Dict<string> {
-		parse_params(this, '_params', '_search', '?');
-		return (<any>this)._params;
+		if (this._params)
+			return this._params;
+		init_uri(this);
+		this._params = {};
+		if (this._search[0] != '?') {
+			return this._params;
+		}
+
+		let ls = this._search.substring(1).split('&');
+
+		for (let i = 0; i < ls.length; i++) {
+			let o = ls[i].split('=');
+			this._params[ o[0] ] = decodeURIComponent(o[1] || '');
+		}
+		return this._params;
 	}
 
 	set params(value: Dict<string>) {
-		(<any>this)._params = {...value};
-		(<any>this)._search = querystringStringify('?', (<any>this)._params);
+		init_uri(this);
+		this._params = {...value};
+		this._search = querystringStringify('?', this._params);
 	}
-	
+
+	/**
+	 * Returns a Hash parameter set as an object, or set
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints:
+	 * // {
+	 * //   a: "200",
+	 * //   b: "300"
+	 * // }
+	 * console.log(new URL('http://quarks.cc/#a=200&b=300').hashParams);
+	 * ```
+	*/
 	get hashParams(): Dict<string> {
-		parse_params(this, '_hash_params', '_hash', '#');
-		return (<any>this)._hash_params;
+		if (this._hashParams)
+			return this._hashParams;
+		init_uri(this);
+		this._hashParams = {};
+		if (this._hash[0] != '#') {
+			return this._hashParams;
+		}
+
+		let ls = this._hash.substring(1).split('&');
+
+		for (let i = 0; i < ls.length; i++) {
+			let o = ls[i].split('=');
+			this._hashParams[ o[0] ] = decodeURIComponent(o[1] || '');
+		}
+		return this._hashParams;
 	}
 
-	set hashParams(value: Dict<string>){
-		(<any>this)._hash_params = {...value};
-		(<any>this)._hash = querystringStringify('#', (<any>this)._hash_params);
+	set hashParams(value: Dict<string>) {
+		init_uri(this);
+		this._hashParams = {...value};
+		this._hash = querystringStringify('#', this._hashParams);
 	}
 
-	// get path param
+	/**
+	 * Get path param
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: ok
+	 * console.log(new URL('http://quarks.cc/?args=ok').getParam('args'));
+	 * ```
+	 */
 	getParam(name: string): string {
-		return (<any>this).params[name];
+		return this.params[name];
 	}
 
-	// set path param
-	setParam(name: string, value: string): URL {
+	/**
+	 * Set the URL query parameter key-value pair and return self
+	 */
+	setParam(name: string, value: string): this {
 		this.params[name] = value || '';
-		(<any>this)._search = querystringStringify('?', (<any>this)._params);
+		this._search = querystringStringify('?', this.params);
 		return this;
 	}
-	
-	// del path param
-	deleteParam(name: string): URL {
+
+	/**
+	 * Remove URL query parameters by name
+	 */
+	deleteParam(name: string): this {
 		delete this.params[name];
-		(<any>this)._search = querystringStringify('?', (<any>this)._params);
+		this._search = querystringStringify('?', this.params);
 		return this;
 	}
-	
-	// del all prams
-	clearParam(): URL {
-		(<any>this)._params = {};
-		(<any>this)._search = '';
+
+	/**
+	 * Delete all of params in the URL
+	 */
+	clearParams(): this {
+		init_uri(this);
+		this._params = {};
+		this._search = '';
 		return this;
 	}
-	
-	// get hash param
+
+	/**
+	 * Get hash param by name
+	 */
 	getHash(name: string): string {
 		return this.hashParams[name];
 	}
-	
-	// set hash param
-	setHash(name: string, value: string): URL {
+
+	/**
+	 * Set hash param by the key/value
+	*/
+	setHash(name: string, value: string): this {
 		this.hashParams[name] = value || '';
-		(<any>this)._hash = querystringStringify('#', (<any>this)._hash_params);
+		this._hash = querystringStringify('#', this.hashParams);
 		return this;
 	}
-	
-	// del hash param
-	deleteHash(name: string): URL {
+
+	/**
+	 * Delete hash param by the name
+	 */
+	deleteHash(name: string): this {
 		delete this.hashParams[name];
-		(<any>this)._hash = querystringStringify('#', (<any>this)._hash_params);
+		this._hash = querystringStringify('#', this.hashParams);
 		return this;
 	}
-	
-	// del hash all params
-	clearHash(): URL {
-		(this as any)._hash_params = {};
-		(this as any)._hash = '';
+
+	/**
+	 * Delete all of hash params in the URL
+	 */
+	clearHashs(): this {
+		init_uri(this);
+		this._hashParams = {};
+		this._hash = '';
 		return this;
 	}
-	
-	// relative path
-	relative(to: string): string {
-		var target = new URL(to);
-		if ( this.origin != target.origin )
-			return (this as any)._origin + (this as any)._filename;
-		var ls: string[]  = (this as any)._filename == '/' ? [] : (this as any)._filename.split('/');
-		var ls2: string[] = (target as any)._filename == '/' ? [] : (target as any)._filename.split('/');
-		var len = Math.max(ls.length, ls2.length);
-		
-		for (var i = 1; i < len; i++) {
-			if (ls[i] != ls2[i]) {
-				len = ls.length - i;
+
+	/**
+	 * Get relative path from the fromPath to self
+	 * 
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: ../A/B/C/test.js
+	 * var url = new URL('http://quarks.cc/A/B/C/test.js');
+	 * console.log(url.relative('http://quarks.cc/home/'));
+	 * // Prints: file:///var/data/A/B/C/test.js
+	 * var url2 = new URL('file:///var/data/A/B/C/test.js');
+	 * console.log(url2.relative('http://quarks.cc/home/'));
+	 * ```
+	 */
+	relative(fromPath: string): string {
+		let from = new URL(fromPath);
+		if ( this.origin != from.origin ) {
+			return this._origin + this._filename;
+		}
+
+		let fr: string[] = from._filename == '/' ? [] : from._filename.split('/').slice(0,-1);
+		let to: string[] = this._filename == '/' ? [] : this._filename.split('/'); // to
+		let len = Math.max(fr.length, to.length);
+
+		for (let i = 1; i < len; i++) {
+			if (fr[i] != to[i]) {
+				len = fr.length - i;
 				if (len > 0) {
-					ls = [];
-					for (var j = 0; j < len; j++)
-						ls.push('..');
-					// return ls.join('/') + '/' + ls2.splice(i).join('/');
-					return ls.concat(ls2.splice(i)).join('/');
+					fr = [];
+					for (let j = 0; j < len; j++)
+						fr.push('..');
+					return fr.join('/') + (i < to.length ? '/'+to.slice(i).join('/'): '');
 				}
-				return ls2.splice(i).join('/');
+				return to.slice(i).join('/');
 			}
 		}
 		return '.';
 	}
 
+	/**
+	*/
 	toJSON(): string {
 		return this.href;
 	}
 }
 
-(URL as any).prototype._is_split = false;
-(URL as any).prototype._is_parse = false;
-(URL as any).prototype._value = '';
-(URL as any).prototype._hostname = '';
-(URL as any).prototype._port = '';
-(URL as any).prototype._protocol = '';
-(URL as any).prototype._search = '';
-(URL as any).prototype._hash = '';
-(URL as any).prototype._origin = '';
-(URL as any).prototype._filename = '';
-(URL as any).prototype._dirname = '';
-(URL as any).prototype._basename = -1;
-(URL as any).prototype._extname = -1;
-(URL as any).prototype._params = null;
-(URL as any).prototype._hash_params = null;
-
 function get_path(path?: string): URL {
 	return new URL(path);
 }
 
+/**
+ * @default
+*/
 export default {
-
-	executable: _util.default.unrealized as ()=>string,
-	documents: _util.default.unrealized as (path?: string)=>string,
-	temp: _util.default.unrealized as (path?: string)=>string,
-	resources: _util.default.unrealized as (path?: string)=>string,
-	chdir: _util.chdir,
-	cwd: _util.cwd,
-	normalizePath: _util.cwd,
-
 	URL: URL,
 
-	/** 
-	 * @func isAbsolute(path) is absolute path
-	 */
-	isAbsolute: _util.isAbsolute, // func
-	
 	/**
-	 * @func resolve(path) resolve path 
-	 */
-	resolve: _util.formatPath, // func
+	 * Get the executable file path
+	 * @method executable()string
+	*/
+	executable: _executable,
 
 	/**
-	 * @func classicPath()
-	 */
-	classicPath: _util.classicPath,
+	 * Get the documents directory path
+	 * @method documents(path?:string)string
+	*/
+	documents: _documents,
 
 	/**
-	 * full filename
-	 */
-	basename(path?: string) {
-		return get_path(path).basename;
-	},
+	 * Get the temporary directory path
+	 * @method temp(path?:string)string
+	*/
+	temp: _temp,
 
 	/**
-	 * full filename
+	 * Get the resources directory path
+	 * @method resources(path?:string)string
+	*/
+	resources: _resources,
+
+	/**
+	 * Get the current working directory
+	 * @method cwd()string
+	*/
+	cwd: _cwd,
+
+	/**
+	 * Set the current working directory and return `true` if successful
+	 * @method chdir(path:string)boolean
+	*/
+	chdir: _chdir,
+
+	/**
+	 * Format part path to normalize path
+	 * @method normalizePath(path:string,retain_up?:boolean)string
+	*/
+	normalizePath: normalizePath,
+
+	/**
+	 * Path delimiter
+	 * @get delimiter:string
+	*/
+	delimiter: delimiter,
+
+	/**
+	 * Restore the path to a path that the operating system can recognize.
+	 * Generally, you do not need to call this function unless you directly call
+	 * a Native/C/C++ function that is not provided by `Quark`
+	 * @method classicPath(path:string)string
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: /var/data/test.js
+	 * console.log(path.normalizePath('file:///var/data/test.js'));
+	 * ```
 	 */
-	dirname(path?: string) {
+	classicPath: classicPath,
+
+	/**
+	 * Format path to standard absolute path
+	 * @method resolve(path:string,partPath?string)string
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints: http://quarks.cc/A/C/test.js
+	 * console.log(path.resolve('http://quarks.cc/home', "..", "A", "B", "..", "C", "test.js"));
+	 * // Prints: 
+	 * // true
+	 * // file:///var/data/aaa/cc/ddd/kk.jpg
+	 * console.log(path.chdir('/var/data'));
+	 * console.log(path.resolve('aaa/bbb/../cc/.//!<ddd/kk.jpg'));
+	 * ```
+	 */
+	resolve: resolve, // func
+
+	/**
+	 * Test whether it is an absolute path
+	 * @method isAbsolute(path:string)boolean
+	 * @example
+	 * 
+	 * ```ts
+	 * // Prints:
+	 * // true
+	 * // true
+	 * // false
+	 * console.log(path.isAbsolute('/var/kk'));
+	 * console.log(path.isAbsolute('http://quarks.cc/'));
+	 * console.log(path.isAbsolute('index.jsx'));
+	 * ```
+	 */
+	isAbsolute: isAbsolute, // func
+
+	/**
+	 * Get dirname
+	 */
+	dirname(path?: string): string {
 		return get_path(path).dirname;
 	},
 
 	/**
-	 * full filename
+	 * Get extname
 	 */
-	extname(path?: string) {
+	extname(path?: string): string {
 		return get_path(path).extname;
 	},
 
 	/**
-	 * full filename
+	 * Get filename
 	 */
-	filename(path?: string) {
+	filename(path?: string): string {
 		return get_path(path).filename;
 	},
 
 	/**
-	 * full path
+	 * Get path
 	 */
-	path(path?: string) {
+	path(path?: string): string {
 		return get_path(path).path;
 	},
-	
-	search(path?: string) {
+
+	/** Get search */
+	search(path?: string): string {
 		return get_path(path).search;
 	},
-	
-	hash(path?: string) {
+
+	/** Get hash */
+	hash(path?: string): string {
 		return get_path(path).hash;
 	},
-	
-	host(path?: string) {
+
+	/** Get host */
+	host(path?: string): string {
 		return get_path(path).host;
 	},
-	
-	hostname(path?: string) {
+
+	/** Get hostname */
+	hostname(path?: string): string {
 		return get_path(path).hostname;
 	},
-	
-	// href origin
-	origin(path?: string) {
+
+	/** Get origin */
+	origin(path?: string): string {
 		return get_path(path).origin;
 	},
-	
-	// port: "81"
-	port(path?: string) {
+
+	/** Get port: "81" */
+	port(path?: string): string {
 		return get_path(path).port;
 	},
 	
-	// protocol: "http:"
-	protocol(path?: string) {
+	/** Get protocol: "http:" */
+	protocol(path?: string): string {
 		return get_path(path).protocol;
 	},
-	
-	// href params
-	params(path?: string) {
+
+	/** Get params */
+	params(path?: string): Dict<string> {
 		return get_path(path).params;
 	},
-	
-	// hash params 
-	hashParams(path?: string) {
+
+	/** Get params  */
+	hashParams(path?: string): Dict<string> {
 		return get_path(path).hashParams;
 	},
-	
-	// get path param
-	getParam(name: string, path?: string) {
+
+	/** Get path param */
+	getParam(name: string, path?: string): string {
 		return get_path(path).getParam(name);
 	},
-	
-	// set path param
-	setParam(name: string, value: string, path?: string) {
+
+	/** Set path param */
+	setParam(name: string, value: string, path?: string): string {
 		return get_path(path).setParam(name, value).href;
 	},
-	
-	// del path param
-	deleteParam(name: string, path?: string) {
+
+	/** Delete path param */
+	deleteParam(name: string, path?: string): string {
 		return get_path(path).deleteParam(name).href;
 	},
-	
-	// del all hash param
-	clearParam(path?: string) {
-		return get_path(path).clearParam().href;
+
+	/** Delete all of hash params */
+	clearParams(path?: string): string {
+		return get_path(path).clearParams().href;
 	},
-	
-	// get hash param
-	getHash(name: string, path?: string) {
+
+	/** Get hash param */
+	getHash(name: string, path?: string): string {
 		return get_path(path).getHash(name);
 	},
-	
-	// set hash param
-	setHash(name: string, value: string, path?: string) {
+
+	/** Set hash param */
+	setHash(name: string, value: string, path?: string): string {
 		return get_path(path).setHash(name, value).href;
 	},
-	
-	// del hash param
-	deleteHash(name: string, path?: string) {
+
+	/** Delete hash param */
+	deleteHash(name: string, path?: string): string {
 		return get_path(path).deleteHash(name).href;
 	},
-	
-	// del all hash param
-	clearHash(path?: string) {
-		return get_path(path).clearHash().href;
+
+	/** Delete all of hash params */
+	clearHashs(path?: string): string {
+		return get_path(path).clearHashs().href;
 	},
-	
-	// relative path
-	relative(from: string, to: string) {
-		if (arguments.length > 1) 
-			return get_path(from).relative(to);
-		else 
-			return get_path(from).relative('');
+
+	/** Get relative path */
+	relative(from: string, target?: string): string {
+		return get_path(target).relative(from);
 	},
-	
 }

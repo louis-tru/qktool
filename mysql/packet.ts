@@ -28,6 +28,8 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
+import buffer,{Buffer,Encoding} from '../buffer';
+
 export class OutgoingPacket {
 
 	/**
@@ -44,7 +46,7 @@ export class OutgoingPacket {
 	 * @constructor
 	 */
 	constructor(size: number, num?: number) {
-		this.buffer = Buffer.alloc(size + 3 + 1);
+		this.buffer = buffer.alloc(size + 3 + 1);
 		this.writeNumber(3, size);
 		this.writeNumber(1, num || 0);
 	}
@@ -61,21 +63,22 @@ export class OutgoingPacket {
 		}
 	}
 
-	write(bufferOrString: Buffer | string, encoding?: BufferEncoding) {
+	write(bufferOrString: Buffer | string, encoding?: Encoding) {
 		if (typeof bufferOrString == 'string') {
-			this.index += this.buffer.write(bufferOrString, this.index, encoding);
+			const buf = buffer.from(bufferOrString, encoding);
+			this.index += this.buffer.write(buf, this.index);
 			return;
 		}
 		bufferOrString.copy(this.buffer, this.index, 0);
 		this.index += bufferOrString.length;
 	}
 
-	writeNullTerminated(bufferOrString: Buffer | string, encoding?: BufferEncoding) {
+	writeNullTerminated(bufferOrString: Buffer | string, encoding?: Encoding) {
 		this.write(bufferOrString, encoding);
 		this.buffer[this.index++] = 0;
 	}
 
-	writeLengthCoded(bufferOrStringOrNumber: Buffer | string | number, encoding?: BufferEncoding) {
+	writeLengthCoded(bufferOrStringOrNumber: Buffer | string | number, encoding?: Encoding) {
 		if (bufferOrStringOrNumber === null) {
 			this.buffer[this.index++] = 251;
 			return;
@@ -110,7 +113,7 @@ export class OutgoingPacket {
 		}
 
 		if (typeof bufferOrStringOrNumber == 'string') {
-			this.writeLengthCoded(Buffer.byteLength(bufferOrStringOrNumber, encoding));
+			this.writeLengthCoded(buffer.byteLength(bufferOrStringOrNumber, encoding));
 			this.write(bufferOrStringOrNumber, encoding);
 			return;
 		}

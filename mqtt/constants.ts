@@ -28,6 +28,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+import bf,{Buffer} from '../buffer';
+
 /* Mnemonic => Command code */
 /* Command code => mnemonic */
 export enum types {
@@ -67,8 +69,8 @@ class CONSTANTS {
 
 /* Connack */
 	readonly SESSIONPRESENT_MASK = 0x01;
-	readonly SESSIONPRESENT_HEADER = Buffer.from([this.SESSIONPRESENT_MASK]);
-	readonly CONNACK_HEADER = Buffer.from([types['connack'] << this.CMD_SHIFT]);
+	readonly SESSIONPRESENT_HEADER = bf.from([this.SESSIONPRESENT_MASK]);
+	readonly CONNACK_HEADER = bf.from([types['connack'] << this.CMD_SHIFT]);
 
 /* Connect */
 	readonly USERNAME_MASK = 0x80;
@@ -78,7 +80,7 @@ class CONSTANTS {
 	readonly WILL_QOS_SHIFT = 3;
 	readonly WILL_FLAG_MASK = 0x04;
 	readonly CLEAN_SESSION_MASK = 0x02;
-	readonly CONNECT_HEADER = Buffer.from([types['connect'] << this.CMD_SHIFT]);
+	readonly CONNECT_HEADER = bf.from([types['connect'] << this.CMD_SHIFT]);
 
 	/* Publish */
 	readonly PUBLISH_HEADER = this.genHeader('publish');
@@ -98,22 +100,22 @@ class CONSTANTS {
 		pubrec: this.genHeader('pubrec')
 	};
 
-	readonly SUBACK_HEADER = Buffer.from([types['suback'] << this.CMD_SHIFT]);
+	readonly SUBACK_HEADER = bf.from([types['suback'] << this.CMD_SHIFT]);
 
 	/* Protocol versions */
-	readonly VERSION3 = Buffer.from([3])
-	readonly VERSION4 = Buffer.from([4])
+	readonly VERSION3 = bf.from([3])
+	readonly VERSION4 = bf.from([4])
 
 	/* QoS */
 	readonly QOS = [0, 1, 2].map(function (qos) {
-		return Buffer.from([qos])
+		return bf.from([qos])
 	});
 
 	/* Empty packets */
 	readonly EMPTY = {
-		pingreq: Buffer.from([types['pingreq'] << 4, 0]),
-		pingresp: Buffer.from([types['pingresp'] << 4, 0]),
-		disconnect: Buffer.from([types['disconnect'] << 4, 0])
+		pingreq: bf.from([types['pingreq'] << 4, 0]),
+		pingresp: bf.from([types['pingresp'] << 4, 0]),
+		disconnect: bf.from([types['disconnect'] << 4, 0])
 	};
 
 	private genHeader(type: string) {
@@ -121,7 +123,7 @@ class CONSTANTS {
 		return [0, 1, 2].map(function (qos) {
 			return [0, 1].map(function (dup) {
 				return [0, 1].map(function (retain) {
-					var buf = Buffer.alloc(1)
+					var buf = bf.alloc(1)
 					buf.writeUInt8(
 						(<any>types)[type] << self.CMD_SHIFT |
 						(dup ? self.DUP_MASK : 0) |

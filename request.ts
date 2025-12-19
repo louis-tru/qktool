@@ -29,7 +29,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 import utils from './util';
-import buffer,{IBuffer} from './buffer';
+import buffer,{Buffer} from './buffer';
 import url from './uri';
 import errno from './errno';
 
@@ -55,7 +55,6 @@ else if (isNode) {
 }
 
 var shared: any = null;
-// var __id = 1;
 
 export const userAgent = user_agent;
 export type Params = Dict | null;
@@ -181,25 +180,21 @@ function requestQuark(
 
 	httpQuark.request({
 		url: url,
-		method: method == 'POST'? http.HTTP_METHOD_POST: http.HTTP_METHOD_GET,
+		method: method == 'POST' ? 1: 0,
 		headers: soptions.headers,
 		postData: post_data,
 		timeout: soptions.timeout,
 		disableCache: true,
 		disableSslVerify: true,
-	}).then((res: any)=>{
-		resolve({
-			data: res.data,
-			headers: res.responseHeaders,
-			statusCode: res.statusCode,
-			httpVersion: res.httpVersion,
-			requestHeaders: soptions.headers,
-			requestData: options.params,
-			cached: false,
-		});
-	}).catch((err: any)=>{
-		reject(Error.new(err));
-	});
+	}, (err?: Error, r?: any)=>err?reject(err):resolve({
+		data: r.data,
+		headers: r.responseHeaders,
+		statusCode: r.statusCode,
+		httpVersion: r.httpVersion,
+		requestHeaders: soptions.headers,
+		requestData: options.params,
+		cached: false,
+	}));
 }
 
 function requestWeb(
@@ -318,7 +313,7 @@ function requestNode(options: Options, soptions: Dict,
 			}
 		}
 
-		function retuens(data: IBuffer) {
+		function retuens(data: Buffer) {
 			resolve({
 				data,
 				headers: res.headers,
@@ -408,17 +403,17 @@ export interface Signer {
 /**
  * @func request
  */
-export function request(pathname: string, opts?: Options): PromiseResult<IBuffer> {
+export function request(pathname: string, opts?: Options): PromiseResult<Buffer> {
 	var options = Object.assign({}, defaultOptions, opts);
 	var { params, method, signer } = options;
 
-	return utils.promise<Result<IBuffer>>(async (resolve, reject)=> {
+	return utils.promise<Result<Buffer>>(async (resolve, reject)=> {
 		var uri = new url.URL(pathname);
 		var is_https = uri.protocol == 'https:';
 		var hostname = uri.hostname;
 		var port = Number(uri.port) || (is_https ? 443: 80);
 		var path = uri.path;
-		uri.clearHash();
+		uri.clearHashs();
 
 		var headers: Dict<string> = {
 			'Host': uri.port ? hostname + ':' + port: hostname,
@@ -607,7 +602,7 @@ export class Request {
 		return {};
 	}
 
-	parseResponseData(buf: IBuffer, result: Result) {
+	parseResponseData(buf: Buffer, result: Result) {
 		return buf;
 	}
 
@@ -645,7 +640,7 @@ export class Request {
 		}
 
 		try {
-			result.data = this.parseResponseData(result.data as IBuffer, result);
+			result.data = this.parseResponseData(result.data as Buffer, result);
 		} catch(err: any) {
 			err.url = url;
 			err.headers = result.headers;

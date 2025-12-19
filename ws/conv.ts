@@ -31,12 +31,12 @@
 import utils from '../util';
 import * as wsservice from './service';
 import errno from '../errno';
-import buffer, {IBuffer} from '../buffer';
+import buffer, {Buffer} from '../buffer';
 import uuid from '../hash/uuid';
 import * as crypto from 'crypto';
 import * as http from 'http';
 import * as net from 'net';
-import * as s from '../_server';
+import * as s from '../node/_server';
 import * as url from 'url';
 import {ConversationBasic, KEEP_ALIVE_TIME} from './_conv';
 export * from './_conv';
@@ -245,7 +245,7 @@ export class WSConversation extends ConversationBasic  {
 			if (printLog)
 				console.log('SW onRequestAuth', this.request.url, this.m_token, ser.headers, ser.params);
 
-			let ok = await utils.timeout(ser.onRequestAuth({ service: name, action: '' }), 2e4, (e)=>console.warn(e));
+			let ok = await utils.timeout(ser.onRequestAuth({ service: name, action: '' }), 2e4).catch(e=>console.warn(e));
 			if (!ok && printLog)
 				console.log('ILLEGAL ACCESS WSService', ser.pathname, ser.headers, ser.params);
 			utils.assert(ok, errno.ERR_REQUEST_AUTH_FAIL);
@@ -254,7 +254,7 @@ export class WSConversation extends ConversationBasic  {
 			if (printLog)
 				console.log('SER Loading', this.request.url, this.m_token);
 
-			await utils.timeout(ser.load(), 2e4, function(e) {
+			await utils.timeout(ser.load(), 2e4).catch((e: any)=>{
 				if (e.errno == errno.ERR_EXECUTE_TIMEOUT_AFTER[0])
 					ser.destroy();
 				console.warn(e);
@@ -273,7 +273,7 @@ export class WSConversation extends ConversationBasic  {
 		}
 	}
 
-	send(data: IBuffer): Promise<void> {
+	send(data: Buffer): Promise<void> {
 		utils.assert(this.isOpen, errno.ERR_CONNECTION_CLOSE_STATUS);
 		return ConversationBasic.write(this, sendDataPacket, [this.socket, data]);
 	}

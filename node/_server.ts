@@ -28,15 +28,15 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import util from './util';
+import util from '../util';
 import {Router, Rule} from './router';
-import {Notification, EventNoticer, Event} from './event';
+import {Notification, EventNoticer, Event} from '../event';
 import * as http from 'http';
 import * as net from 'net';
 import * as fs from './fs';
 import * as path from 'path';
 import incoming_form from './incoming_form';
-import * as _conv from './ws/_conv';
+import * as _conv from '../ws/_conv';
 import {Service} from './service';
 import {StaticService} from './static_service';
 import {Descriptors} from './http_service';

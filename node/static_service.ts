@@ -28,7 +28,7 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import util from './util';
+import util from '../util';
 import * as fs from './fs';
 import * as fs2 from './fs2';
 import {Service} from './service';

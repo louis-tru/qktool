@@ -28,7 +28,7 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import {IBuffer, Bytes } from '../buffer';
+import {Buffer, Bytes } from '../buffer';
 import {rng16} from '../rng';
 
 /**
@@ -54,7 +54,7 @@ function bytesToUuid(buf: Bytes, offset?: number) {
 	bth[buf[i++]], bth[buf[i++]]]).join('');
 }
 
-export default function uuid_v4(random?: IBuffer) {
+export default function uuid_v4(random?: Buffer) {
 	var rnds = random || rng16();
 
 	// Per 4.4, set bits for version and `clock_seq_hi_and_reserved`

@@ -1,6 +1,35 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+const path = require('path');
+
+function cp_base_from_qk(baseDir) {
+	const out = path.resolve(__dirname);
+	// copy files from libs/quark
+	// Because these files are completely compatible and identical.
+	[
+		'_bigint.js',
+		'_buffer.ts',
+		'_common.ts',
+		'_errno.ts',
+		'_event.ts',
+		'_ext.ts',
+		'buffer.ts',
+		'jsonb.ts',
+		'uri.ts',
+	].map(function(name) {
+		const bf = fs.readFileSync(`${baseDir}/${name}`);
+		fs.writeFileSync(`${out}/${name}`, bf);
+	});
+}
+
+if (process.argv[2] == 'cp_base') {
+	const baseDir = path.resolve(__dirname, '../quark');
+	if (fs.existsSync(baseDir)) {
+		cp_base_from_qk(baseDir);
+	}
+	process.exit(0);
+}
 
 var pkg = JSON.parse(
 	fs.readFileSync(`${__dirname}/package.json`, 'utf8')

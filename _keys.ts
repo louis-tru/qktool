@@ -62,7 +62,7 @@ function parse_indent(self: Parser, code: string): Item {
 		throw error(self, 'Keys data indent error');
 	}
 
-	return { indent: indent + space / 2, content: code.substr(i) };
+	return { indent: indent + space / 2, content: code.substring(i) };
 }
 
 // 读取一行代码
@@ -78,13 +78,13 @@ function read_line_code(self: Parser): string | null {
 // 解析接续多行值
 function parse_continuous(self: Parser, str: string): string { // str,
 	if (str[str.length - 1] == '\\'){ // 连续的
-		var ls = [str.substr(0, str.length - 1)];
+		var ls = [str.substring(0, str.length - 1)];
 
 		while(true) {
 			str = read_line_code(self) as string;
 			if (str) {
 				if (str[str.length - 1] == '\\') {
-					ls.push(str.substr(0, str.length - 1));
+					ls.push(str.substring(0, str.length - 1));
 				} else {
 					ls.push(str);
 					break;

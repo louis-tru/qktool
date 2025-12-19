@@ -29,7 +29,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 import utils from '../../util';
-import buffer, {IBuffer} from '../../buffer';
+import buffer, {Buffer} from '../../buffer';
 import errno from '../../errno';
 import {PING_BUFFER,PONG_BUFFER} from '../data';
 import {WSConversation} from './conv';
@@ -120,7 +120,7 @@ export default class WebConversation extends WSConversation {
 	/**
 	 * @ovrewrite 
 	 */
-	async send(data: IBuffer) {
+	async send(data: Buffer) {
 		utils.assert(this.isOpen, errno.ERR_CONNECTION_CLOSE_STATUS);
 		this.m_req.send(data.buffer);
 	}

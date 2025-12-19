@@ -28,11 +28,11 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import util from './util';
+import util from '../util';
 import * as http from 'http';
 import * as net from 'net';
 import _server, {Server} from './_server';
-import upgrade from './ws/upgrade';
+import upgrade from '../ws/upgrade';
 import {StaticService} from './static_service';
 import './http_service';
 import {RuleResult} from './router';

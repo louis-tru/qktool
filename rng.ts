@@ -29,7 +29,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 import utils from './util';
-import buffer, {IBuffer} from './buffer';
+import buffer, {Buffer} from './buffer';
 
 const rnds16 = buffer.alloc(16);
 
@@ -41,7 +41,7 @@ function getRnds(len: number) {
 //
 // If all else fails, use Math.random().  It's fast, but is of unspecified
 // quality.
-var _rng: (len: number)=>IBuffer = function(len: number) {
+var _rng: (len: number)=>Buffer = function(len: number) {
 	var rnds = getRnds(len);
 	for (var i = 0, r = 0; i < 16; i++) {
 		if ((i & 0x03) === 0) r = Math.random() * 0x100000000;
@@ -66,7 +66,7 @@ if (utils.isNode) { // node
 
 	// getRandomValues needs to be invoked in a context where "this" is a Crypto
 	// implementation. Also, find the complete implementation of crypto on IE11.
-	let getRandomValues: (b: IBuffer)=>IBuffer =
+	let getRandomValues: (b: Buffer)=>Buffer =
 		(
 			typeof crypto != 'undefined' && 
 			crypto.getRandomValues && crypto.getRandomValues.bind(crypto)

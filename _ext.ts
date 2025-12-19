@@ -28,6 +28,11 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+declare namespace qk {
+	type Require = NodeRequire;
+	type Module = NodeModule;
+}
+
 interface RequireResolve {
 	(id: string, options?: { paths?: string[]; }): string;
 	paths(request: string): string[] | null;
@@ -36,7 +41,7 @@ interface RequireResolve {
 interface NodeRequire {
 	(id: string): any;
 	resolve: RequireResolve;
-	cache: Dict<NodeModule>;
+	// cache: Dict<NodeModule>;
 	main: NodeModule | undefined;
 }
 

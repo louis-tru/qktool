@@ -30,7 +30,7 @@
 
 import * as _center from './_center';
 import {EventNoticer, Notification, Event} from '../event';
-import * as server from '../_server';
+import * as server from '../node/_server';
 import * as service from './service';
 import * as node from './node';
 

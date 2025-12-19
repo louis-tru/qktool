@@ -31,7 +31,7 @@
 import utils from '../util';
 import uuid from '../hash/uuid';
 import fmtc from './fmtc';
-import {Server} from '../_server';
+import {Server} from '../node/_server';
 import {URL} from '../uri';
 import errno from '../errno';
 import * as service from './service';

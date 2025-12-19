@@ -28,15 +28,15 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-import buffer,{Buffer} from './buffer';
-import {URL} from './uri';
+import buffer,{Buffer} from '../buffer';
+import {URL} from '../uri';
 import * as http2 from 'http2';
 import {
 	Options,Result,defaultOptions,
 	userAgent,querystringStringify,stringifyXml, Request
-} from './request';
-import util from './util';
-import errno from './errno';
+} from '../request';
+import util from '../util';
+import errno from '../errno';
 
 export function http2request(session: http2.ClientHttp2Session, url: string, opts?: Options): Promise<Result<Buffer>> {
 	var options = Object.assign({}, defaultOptions, opts);
@@ -44,7 +44,7 @@ export function http2request(session: http2.ClientHttp2Session, url: string, opt
 
 	return util.promise<Result<Buffer>>(async (resolve, reject)=>{
 		var uri = new URL(url);
-		uri.clearHash();
+		uri.clearHashs();
 	
 		var headers: http2.OutgoingHttpHeaders = {
 			':path': uri.path,

@@ -34,8 +34,12 @@ import {EventNoticer, Event} from './event';
 
 const {_process} = _util;
 
-export default {
-	..._util.default, ..._common,
+/**
+ * @default
+*/
+const _default = {
+	..._util.default,
+	..._common,
 	get id() { return _common.getId() },
 	get options() { return _util.default.options },
 	get config() { return _util.getConfig() },
@@ -50,4 +54,11 @@ export default {
 		return _process.getNoticer('UncaughtException') },
 	get onUnhandledRejection(): EventNoticer<Event<any, {reason: Error, promise: Promise<any>}>> {
 		return _process.getNoticer('UnhandledRejection') },
-}
+};
+
+/**
+ * @default
+*/
+const util: typeof _default = _default;
+
+export default util;

@@ -40,6 +40,7 @@ import * as url from 'url';
 import * as net from 'net';
 import * as tls from 'tls';
 import {Readable} from 'stream';
+import bf,{Buffer} from '../buffer';
 
 var protocols = {
 	mqtt: stream_builder_tcp,

@@ -32,9 +32,10 @@ import protocol from './constants';
 import numbers from './numbers';
 import * as net from 'net';
 import * as parser from './parser';
+import bf,{Buffer} from '../buffer';
 
-const empty = Buffer.allocUnsafe(0);
-const zeroBuf = Buffer.from([0]);
+const empty = bf.alloc(0);
+const zeroBuf = bf.from([0]);
 const nextTick = process.nextTick;
 
 const numCache = numbers.cache;
@@ -129,7 +130,7 @@ function connect (opts: parser.Packet, stream: net.Socket) {
 
 	// Must be a string and non-falsy
 	if (!protocolId ||
-		 (typeof protocolId !== 'string' && !Buffer.isBuffer(protocolId))
+		 (typeof protocolId !== 'string' && !bf.isBuffer(protocolId))
 	) {
 		stream.emit('error', new Error('Invalid protocolId'))
 		return false
@@ -144,7 +145,7 @@ function connect (opts: parser.Packet, stream: net.Socket) {
 	} else length += 1
 
 	// ClientId might be omitted in 3.1.1, but only if cleanSession is set to 1
-	if ((typeof clientId === 'string' || Buffer.isBuffer(clientId)) &&
+	if ((typeof clientId === 'string' || bf.isBuffer(clientId)) &&
 		 (clientId || protocolVersion === 4) && (clientId || clean)) {
 		length += clientId.length + 2
 	} else {
@@ -182,14 +183,14 @@ function connect (opts: parser.Packet, stream: net.Socket) {
 			stream.emit('error', new Error('Invalid will topic'))
 			return false
 		} else {
-			length += Buffer.byteLength(will.topic) + 2
+			length += bf.byteLength(will.topic) + 2
 		}
 
 		// Payload
 		if (will.payload && will.payload) {
 			if (will.payload.length >= 0) {
 				if (typeof will.payload === 'string') {
-					length += Buffer.byteLength(will.payload) + 2
+					length += bf.byteLength(will.payload) + 2
 				} else {
 					length += will.payload.length + 2
 				}
@@ -207,7 +208,7 @@ function connect (opts: parser.Packet, stream: net.Socket) {
 	if (username != null) {
 		if (isStringOrBuffer(username)) {
 			providedUsername = true
-			length += Buffer.byteLength(username) + 2
+			length += bf.byteLength(username) + 2
 		} else {
 			stream.emit('error', new Error('Invalid username'))
 			return false
@@ -304,8 +305,8 @@ function publish (opts: parser.Packet, stream: net.Socket) {
 
 	// Topic must be a non-empty string or Buffer
 	if (typeof topic === 'string')
-		length += Buffer.byteLength(topic) + 2
-	else if (Buffer.isBuffer(topic))
+		length += bf.byteLength(topic) + 2
+	else if (bf.isBuffer(topic))
 		length += topic.length + 2
 	else {
 		stream.emit('error', new Error('Invalid topic'))
@@ -313,7 +314,7 @@ function publish (opts: parser.Packet, stream: net.Socket) {
 	}
 
 	// Get the payload length
-	if (!Buffer.isBuffer(payload)) length += Buffer.byteLength(payload)
+	if (!bf.isBuffer(payload)) length += bf.byteLength(payload)
 	else length += payload.length
 
 	// Message ID must a number if qos > 0
@@ -394,7 +395,7 @@ function subscribe (opts: parser.Packet, stream: net.Socket) {
 				return false
 			}
 
-			length += Buffer.byteLength(itopic) + 2 + 1
+			length += bf.byteLength(itopic) + 2 + 1
 		}
 	} else {
 		stream.emit('error', new Error('Invalid subscriptions'))
@@ -486,7 +487,7 @@ function unsubscribe(opts: parser.Packet, stream: net.Socket) {
 				stream.emit('error', new Error('Invalid unsubscriptions'))
 				return false
 			}
-			length += Buffer.byteLength(unsubs[i]) + 2
+			length += bf.byteLength(unsubs[i]) + 2
 		}
 	} else {
 		stream.emit('error', new Error('Invalid unsubscriptions'))
@@ -535,7 +536,7 @@ function calcLengthLength (length: number) {
 function genBufLength (length: number) {
 	var digit = 0
 	var pos = 0
-	var buffer = Buffer.allocUnsafe(calcLengthLength(length))
+	var buffer = bf.allocUnsafe(calcLengthLength(length))
 
 	do {
 		digit = length % 128 | 0
@@ -583,7 +584,7 @@ function writeLength (stream: net.Socket, length: number) {
  */
 
 function writeString(stream: net.Socket, string: string) {
-	var strlen = Buffer.byteLength(string)
+	var strlen = bf.byteLength(string)
 	writeNumber(stream, strlen)
 
 	stream.write(string, 'utf8')
@@ -630,7 +631,7 @@ function byteLength(bufOrString: Buffer | string) {
 	else if (bufOrString instanceof Buffer) 
 		return bufOrString.length
 	else
-		return Buffer.byteLength(bufOrString)
+		return bf.byteLength(bufOrString)
 }
 
 function isStringOrBuffer (field: string | Buffer) {

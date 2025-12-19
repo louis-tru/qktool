@@ -36,7 +36,7 @@ import {
 import {ClientFlags, Charsets, Commands} from './constants';
 import * as auth from './auth';
 import {OutgoingPacket} from './packet';
-import {Buffer} from 'buffer';
+import buffer,{Buffer} from '../buffer';
 import {Socket} from 'net';
 import {Options, default_options} from './opts';
 import {Watch} from '../monitor';
@@ -262,7 +262,7 @@ export class Connection {
 		socket.setNoDelay(true);
 		socket.setTimeout(36e5, ()=>/*1h timeout*/ socket.end());
 		socket.on('data', e=>{
-			try { parser.write(e) } catch(err) { self._Destroy(err) }
+			try { parser.write(buffer.from(e)) } catch(err) { self._Destroy(err) }
 		});
 		socket.on('error', err=>self._Destroy(err));
 		socket.on('end', ()=>self._Destroy('mysql server has been socket end'));
@@ -346,7 +346,7 @@ export class Connection {
 			// init db, change db
 			utils.assert(this._isReady);
 			this.options.database = db;
-			let packet = new OutgoingPacket(1 + Buffer.byteLength(db, 'utf-8'));
+			let packet = new OutgoingPacket(1 + buffer.byteLength(db, 'utf-8'));
 			packet.writeNumber(1, Commands.COM_INIT_DB);
 			packet.write(db, 'utf-8');
 			this._write(packet);

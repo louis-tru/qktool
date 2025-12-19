@@ -28,7 +28,7 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import util from'./util';
+import util from '../util';
 import {ReadCookie, Cookie} from './cookie';
 import {Service} from './service';
 import {HttpService} from './http_service';

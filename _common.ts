@@ -28,17 +28,17 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-import {List} from './event';
+import {List} from './_event';
 import errno from './errno';
 
-var id = 10;
-var scopeLockQueue = new Map();
+let id = 10;
+let scopeLockQueue = new Map();
 
-export var currentTimezone = new Date().getTimezoneOffset() / -60; // 当前时区
+export const currentTimezone = new Date().getTimezoneOffset() / -60; //!< Current time zone
 
 function clone_object(new_obj: any, obj: any): any {
-	for (var name of Object.getOwnPropertyNames(obj)) {
-		var property = Object.getOwnPropertyDescriptor(obj, name)!;
+	for (let name of Object.getOwnPropertyNames(obj)) {
+		let property = Object.getOwnPropertyDescriptor(obj, name)!;
 		if (property.writable) {
 			new_obj[name] = clone(property.value);
 		}
@@ -51,13 +51,12 @@ export function getId() {
 }
 
 /**
- * @fun clone # 克隆一个Object对像
- * @arg obj {Object} # 要复制的Object对像
- * @arg {Object}
+ * @method clone Clone an Object
+ * @param  obj   The Object to be cloned
  */
 export function clone(obj: any): any {
 	if (obj && typeof obj == 'object') {
-		var new_obj: any = null, i;
+		let new_obj: any = null, i;
 
 		switch (obj.constructor) {
 			case Object:
@@ -82,16 +81,16 @@ export function clone(obj: any): any {
 }
 
 /**
- * @func extend(obj,extd)
+ * @method extend(obj:any,extd:any,top?:any)any
  */
-export function extend(obj: any, extd: any, end: any): any {
-	if (extd.__proto__ && extd.__proto__ !== end)
-		extend(obj, extd.__proto__, end);
-	for (var i of Object.getOwnPropertyNames(extd)) {
+export function extend(obj: any, extd: any, top: any = Object.prototype): any {
+	if (extd.__proto__ && extd.__proto__ !== top)
+		extend(obj, extd.__proto__, top);
+	for (let i of Object.getOwnPropertyNames(extd)) {
 		if (i != 'constructor') {
-			var desc = <PropertyDescriptor>Object.getOwnPropertyDescriptor(extd, i);
-			desc.enumerable = false;
-			Object.defineProperty(obj, i, desc);
+			let descriptor = Object.getOwnPropertyDescriptor(extd, i)!;
+			descriptor.enumerable = false;
+			Object.defineProperty(obj, i, descriptor);
 		}
 	}
 	return obj;
@@ -103,29 +102,29 @@ export function extend(obj: any, extd: any, end: any): any {
 export function noop() {}
 
 /**
- * @func isNull(value)
+ * @method isNull(value)
  */
 export function isNull(value: any): boolean {
 	return value === null || value === undefined
 }
 
 /**
- * @fun extendClass #  EXT class prototype objects
+ * EXT class prototype objects
+ * 
+ * @method extendClass(cls:Function,extds:Function[]|Function,top?:any)Function
  */
-export function extendClass(cls: Function, extds: Function[] | Function, end = Object.prototype) {
-	var proto = cls.prototype;
-	var extds_ = Array.isArray(extds)? extds: [extds];
-	for (var extd of extds_) {
+export function extendClass(cls: Function, extds: Function[] | Function, top = Object.prototype) {
+	for (let extd of Array.isArray(extds)? extds: [extds]) {
 		if (extd instanceof Function) {
 			extd = extd.prototype;
 		}
-		extend(proto, extd, end);
+		extend(cls.prototype, extd, top);
 	}
 	return cls;
 }
 
 async function scopeLockDequeue(mutex: any): Promise<void> {
-	var item, queue = scopeLockQueue.get(mutex);
+	let item, queue = scopeLockQueue.get(mutex);
 	while( item = queue.shift() ) {
 		try {
 			item.resolve(await item.cb());
@@ -137,7 +136,7 @@ async function scopeLockDequeue(mutex: any): Promise<void> {
 }
 
 /**
- * @func scopeLock(mutex,cb)
+ * @method scopeLock(mutex:any,cb:Function)Promise
  */
 export function scopeLock<R>(mutex: any, cb: ()=>Promise<R>|R): Promise<R> {
 	assert(mutex, 'Bad argument');
@@ -153,22 +152,11 @@ export function scopeLock<R>(mutex: any, cb: ()=>Promise<R>|R): Promise<R> {
 }
 
 /**
- * @func isScopeLocked(mutex,cb)
+ * Get object value by name
  */
-export function isScopeLocked(mutex: any) {
-	return scopeLockQueue.has(mutex);
-}
-
-/**
- * @fun get(name,self?) # get object value by name
- * @arg name {String} 
- * @arg [self] {Object}
- * @ret {Object}
- */
-export function get(name: string, self: any): any {
-	var names = name.split('.');
-	var item;
-	while ( (item = names.shift()) ) {
+export function getProp(name: string, self: any): any {
+	let names = name.split('.');
+	for ( let item of names ) {
 		self = self[item];
 		if (!self)
 			return self;
@@ -177,67 +165,98 @@ export function get(name: string, self: any): any {
 }
 
 /**
-* @fun set(name,value[,self]) # Setting object value by name
-* @arg name {String} 
-* @arg value {Object} 
-* @arg [self] {Object}
-* @ret {Object}
+ * Setting object value by name
 */
-export function set(name: string, value: any, self: any): any {
-	var item = null;
-	var names = name.split('.');
-	var _name = <string>names.pop();
-	while ( (item = names.shift()) ){
-		self = self[item] || (self[item] = {});
+export function setProp(name: string, value: any, self: any): any {
+	let names = name.split('.');
+	let last = names.pop()!;
+	for ( let item of names ) {
+		self = self[item];
+		if (!self)
+			self = self[item] = {};
 	}
-	self[_name] = value;
+	self[last] = value;
 	return self;
 }
 
 /**
- * @fun def(name[,self]) # Delete object value by name
- * @arg name {String} 
- * @arg [self] {Object}
+ * Delete object value by name
  */
-export function del(name: string, self: any): void {
-	var names = name.split('.');
-	var _name = <string>names.pop();
-	self = get(names.join('.'), self);
+export function removeProp(name: string, self: any): void {
+	let names = name.split('.');
+	let last = names.pop()!;
+	self = getProp(names.join('.'), self);
 	if (self)
-		delete self[_name];
+		delete self[last];
 }
 
 /**
- * @fun random # 创建随机数字
- * @arg [start] {Number} # 开始位置
- * @arg [end] {Number}   # 结束位置
- * @ret {Number}
+ * @method random(start?,end?) Creating random numbers
+ * @param start? Numbers of begin
+ * @param end?   Numbers of end
  */
-export function random(start: number = 0, end: number = 1E8): number {
+export function random(start: Uint = 0, end: Uint = 1E8): Uint {
 	if (start == end)
 		return start;
-	var r = Math.random();
+	let r = Math.random();
 	start = start || 0;
 	end = end || (end===0?0:1E8);
+	// start = 0, end = 2
+	// floor(r * 3) => 0 or 1 or 2, probability 1/3 of each
 	return Math.floor(start + r * (end - start + 1));
 }
 
 /**
-* @fun fixRandom # 固定随机值,指定几率返回常数
-* @arg args.. {Number} # 输入百分比
-* @ret {Number}
+ * @method randomFloat(start?,end?) Creating random float numbers
+ * @param start? Numbers of begin
+ * @param end?   Numbers of end
+ */
+export function randomFloat(start: Float = 0, end: Float = 1): Float {
+	if (start == end)
+		return start;
+	let r = Math.random();
+	start = start || 0;
+	end = end || 1;
+	return start + r * (end - start);
+}
+
+/**
+* @method fixRandom(arg0,...args)Uint
+* 
+* * Fixed random value, specified probability to return a constant
+* 
+* * Get a random number from `0` to the passed probability number `arguments.length` by probability
+* 
+* * The sum of the passed probabilities cannot be `zero`
+* 
+* @param arg0:number   Enter percentage
+* @param args:number[] Enter percentage
+* 
+* Example:
+* 
+* ```js
+* // Prints: 3 5 9
+* console.log(util.random(0, 10))
+* console.log(util.random(0, 10))
+* console.log(util.random(0, 10))
+* // Prints 0 3 2
+* console.log(util.fixRandom(10, 20, 30, 40))
+* console.log(util.fixRandom(10, 20, 30, 40))
+* console.log(util.fixRandom(10, 20, 30, 40))
+* ```
 */
 export function fixRandom(arg: number, ...args: number[]): number {
 	if (!args.length)
 		return 0;
-	var total = arg;
-	var argus = [arg];
-	for (var i = 0; i < args.length; i++) {
+	let total = arg;
+	let argus = [arg];
+	let len = args.length;
+	for (let i = 0; i < len; i++) {
 		total += args[i];
 		argus.push(total);
 	}
-	var r = random(0, total - 1);
-	for (var i = 0; i < argus.length; i++) {
+	let r = random(0, total - 1);
+	for (let i = 0; (i < len); i++) {
 		if (r < argus[i])
 			return i;
 	}
@@ -245,25 +264,24 @@ export function fixRandom(arg: number, ...args: number[]): number {
 }
 
 /**
-* @fun filter # object filter
-* @arg obj {Object}  
-* @arg exp {Object}  #   filter exp
-* @arg non {Boolean} #   take non
-* @ret {Object}
+* @method filter(obj,exp,non?)any Filter object attrs
+* @param obj:any
+* @param exp:string[]|Function filter exp
+* @param non?:boolean          take non
 */
 export function filter(obj: any, exp: string[] | ((key: string, value: any)=>boolean), non: boolean = false): any {
-	var rev: any = {};
-	var isfn = (typeof exp == 'function');
+	let rev: any = {};
+	let isfn = (typeof exp == 'function');
 	
 	if (isfn || non) {
-		for (var key in obj) {
-			var value = obj[key];
-			var b: boolean = isfn ? (<any>exp)(key, value) : ((<string[]>exp).indexOf(key) != -1);
+		for (let key in obj) {
+			let value = obj[key];
+			let b: boolean = isfn ? (<any>exp)(key, value) : ((<string[]>exp).indexOf(key) != -1);
 			if (non ? !b : b)
 				rev[key] = value;
 		}
 	} else {
-		for (var item of <string[]>exp) {
+		for (let item of <string[]>exp) {
 			item = String(item);
 			if (item in obj)
 				rev[item] = obj[item];
@@ -272,38 +290,22 @@ export function filter(obj: any, exp: string[] | ((key: string, value: any)=>boo
 	return rev;
 }
 
-Object.defineProperty(Error.prototype, 'filter', {
-	enumerable: false,
-	value: function(this: Error, keys: string[], exclude?: string[]) {
-		var results = [] as any[];
-		for (var i of keys) {
-			results.push(this[i]);
-		}
-		results.push(filter(this, keys.concat(exclude || []), true));
-		return results;
-	}
-});
-
 /**
- * @fun update # update object property value
- * @arg obj {Object}      #        need to be updated for as
- * @arg extd {Object}    #         update object
- * @arg {Object}
+ * @method update(obj,extd)any Update object property value
+ * @param obj:any  need to be updated for as
+ * @param extd:any update object
  */
-export function update<T>(obj: T, extd: any): T {
-	for (var key in extd) {
-		if (key in (obj as any)) {
-			(obj as any)[key] = select((obj as any)[key], extd[key]);
+export function update<T extends object>(obj: T, extd: any): T {
+	for (let key in extd) {
+		if (key in obj) {
+			(<any>obj)[key] = select((<any>obj)[key], extd[key]);
 		}
 	}
 	return obj;
 }
 
 /**
- * @fun select
- * @arg default {Object} 
- * @arg value   {Object} 
- * @reg {Object}
+ * @method select(default:any,value:any)any
  */
 export function select<T>(default_: T, value: any): T {
 	if ( typeof default_ == typeof value ) {
@@ -314,9 +316,9 @@ export function select<T>(default_: T, value: any): T {
 }
 
 /**
- * @fun equalsClass  # Whether this type of sub-types
- * @arg baseclass {class}
- * @arg subclass {class}
+ * Whether this type of sub-types
+ * 
+ * @method equalsClass(baseclass:any,subclass:any)boolean
  */
 export function equalsClass(baseclass: any, subclass: any): boolean {
 	if (!baseclass || !subclass || !subclass.prototype)
@@ -324,10 +326,10 @@ export function equalsClass(baseclass: any, subclass: any): boolean {
 	if (baseclass === subclass)
 		return true;
 	
-	var prototype = baseclass.prototype;
-	var subprototype = subclass.prototype;
+	let prototype = baseclass.prototype;
+	let subprototype = subclass.prototype;
 	if (!subprototype) return false;
-	var obj = subprototype.__proto__;
+	let obj = subprototype.__proto__;
 	
 	while (obj) {
 		if (prototype === obj)
@@ -338,51 +340,44 @@ export function equalsClass(baseclass: any, subclass: any): boolean {
 }
 
 /**
- * @fun assert
+ * @method assert(condition,arg?:number|ErrorNewArg,extMsg?:string)
+ * Asserts that value is not null or undefined.
+ * @param condition The value to check.
+ * @param arg? Optional code or message for the error thrown.
+ * @param extMsg?  Optional message for the error thrown.
+ * @returns {void} nothing
  */
-export function assert(condition: any, code?: number | ErrorNewArg, desc?: string | ErrorDescribe): void {
-	if (condition) {
+export function assert<T>(condition: T, arg?: number | ErrorNewArg, extMsg?: string): asserts condition is NonNullable<T> {
+	if (condition)
 		return;
-	}
-	var err;
-	if (typeof code == 'number') {
-		err = Error.new([code, 'assert fail, unforeseen exceptions']);
+	if (typeof arg == 'number') {
+		throw Error.new([arg, extMsg || 'assert fail, unforeseen exceptions']);
+	} else if (arg) {
+		const err = Error.new(arg);
+		if (extMsg)
+			err.message += '\n' + extMsg;
+		throw err;
 	} else {
-		err = Error.new(code || [-30009, 'ERR_ASSERT_ERROR']);
+		throw Error.new([-30009, extMsg || 'ERR_ASSERT_ERROR']);
 	}
-	if (desc) {
-		if (typeof desc == 'string') {
-			err.description = desc;
-		} else {
-			Object.assign(err, desc);
-		}
-	}
-	throw err;
 }
 
-export function timeout<T>(promise: Promise<T> | T, time: number, timeoutAfterErrorHandle?: (e: Error)=>void): Promise<T> {
+export function timeout<T>(promise: Promise<T> | T, time: number): Promise<T> {
 	if (promise instanceof Promise) {
 		return new Promise(function(_resolve, _reject) {
-
-			var _error = timeoutAfterErrorHandle || function(err: Error) {
-				// console.warn('timeout otherErrorHandle? unhandled', err);
-				throw err;
-			};
-
-			var id: any = setTimeout(function() {
+			let id: any = setTimeout(function() {
 				id = 0;
 				_reject(Error.new(errno.ERR_EXECUTE_TIMEOUT));
 			}, time);
 
-			var ok = (err: any, r?: any)=>{
+			let ok = (err: any, r?: any)=>{
 				if (id) {
 					clearTimeout(id);
 					id = 0;
-					err ? _reject(err): _resolve(r);
-				} else {
-					err = err || Error.new(errno.ERR_EXECUTE_TIMEOUT_AFTER)
-					err.result = r;
-					_error(err);
+					if (err)
+						_reject(err);
+					else
+						_resolve(r);
 				}
 			};
 
@@ -393,46 +388,16 @@ export function timeout<T>(promise: Promise<T> | T, time: number, timeoutAfterEr
 	}
 }
 
-interface PromiseExecutor<T> {
-	(resolve: (value?: T)=>void, reject: (reason?: any)=>void, promise: Promise<T>): Promise<void> | void;
-}
-
-export class PromiseNx<T extends any> extends Promise<T> {
-	protected _executor?: PromiseExecutor<T>;
-	constructor(executor?: (resolve: (value?: T)=>void, reject: (reason?: any)=>void, promise: Promise<T>)=>any) {
-		var _resolve: any;
-		var _reject: any;
-
-		super(function(resolve: (value: T)=>void, reject: (reason?: any)=>void) {
-			_resolve = resolve;
-			_reject = reject;
-		});
-
-		this._executor = executor;
-
-		try {
-			var r = this.executor(_resolve, _reject);
-			if (r instanceof Promise) {
-				r.catch(_reject);
-			}
-		} catch(err) {
-			_reject(err);
-		}
-	}
-
-	executor(resolve: (value?: T)=>void, reject: (reason?: any)=>void) {
-		if (this._executor) {
-			return this._executor(resolve, reject, this);
-		} else {
-			throw Error.new('executor undefined');
-		}
-	}
-
-}
-
 /**
- * @func promise(executor)
+ * @method promise(executor:Function)Promise
  */
-export function promise<T extends any>(executor: (resolve: (value?: T)=>void, reject: (reason?: any)=>void, promise: Promise<T>)=>any) {
-	return new PromiseNx<T>(executor) as Promise<T>;
+export function promise<T extends any>(executor: (resolve: (value: T)=>void, reject: (reason?: any)=>void, promise: Promise<T>)=>any) {
+	let _resolve: (value: T | PromiseLike<T>) => void;
+	let _reject:  (reason?: any) => void
+	let p = new Promise<T>(function(r,j) {
+		_resolve = r;
+		_reject = j;
+	});
+	executor(_resolve!, _reject!, p);
+	return p;
 }

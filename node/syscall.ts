@@ -28,7 +28,7 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import util from './util';
+import util from '../util';
 import * as child_process from 'child_process';
 import * as stream from 'stream';
 

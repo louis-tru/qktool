@@ -35,33 +35,74 @@ import {DelayCall} from './delay_call';
 const { isNode, isQuark, isWeb } = util;
 
 if (isWeb) {
-
-	var sync_local = function(self: Storage) {}
-	var commit = function(self: Storage) {}
-
-	var format_key = function(self: Storage, key: string) {
+	// use localStorage as storage
+	var get_key = function(self: Storage, key: string) {
 		return (<any>self).m_prefix + key
 	};
 
-	var stringify_val = function(val: any): any {
-		return JSON.stringify(val);
+	var has = function(self: Storage, key: string): boolean {
+		key = get_key(self, key);
+		return key in (<any>self).m_value;
 	};
 
-	var paese_value = function(val: any): any {
-		try { 
-			return JSON.parse(val);
-		} catch(e) {
-			console.warn('qktool#storage#paese_value', e);
+	var get_val = function(self: Storage, key: string): any {
+		key = get_key(self, key);
+		var rv = (<any>self).m_value[key];
+		if (rv) {
+			return JSON.parse(rv);
 		}
-		return null;
 	};
 
-} else {
-	if (isQuark) {
-		var fs = __binding__('_fs');
-	} else if (isNode) {
-		var fs = require('fs');
+	var set_val = function(self: Storage, key: string, val: any): any {
+		try {
+			key = get_key(self, key);
+			(<any>self).m_value[key] = JSON.stringify(val);
+		} catch(e) {
+			console.warn('qktool.storage.web.set_val', e);
+		}
+	};
+
+	var del_val = function(self: Storage, key: string): any {
+		key = get_key(self, key);
+		delete (<any>self).m_value[key];
+	};
+
+	var clear = function(self: Storage): any {
+		var keys: any[] = [];
+		var prefix = (<any>self).m_prefix;
+		for (var i in (<any>self).m_value) {
+			if (i.substring(0, prefix.length) == prefix) {
+				keys.push(i);
+			}
+		}
+		for (var key of keys) {
+			delete (<any>self).m_value[key];
+			// localStorage.removeItem(key);
+		}
 	}
+
+} else if (isQuark) {
+	// use quark storage
+	const _storage = __binding__('_storage');
+
+	var get_val = function(self: Storage, key: string): any {
+		var rv = _storage.get(key);
+		if ( rv ) {
+			return JSON.parse(rv);
+		}
+	};
+	var set_val = function(self: Storage, key: string, val: any): any {
+		_storage.set(key, JSON.stringify(val));
+	};
+	var del_val = function(self: Storage, key: string): any {
+		_storage.remove(key);
+	};
+	var clear = function(self: Storage): any {
+		_storage.clear();
+	};
+} else if (isNode) {
+	// use fs as storage
+	var fs = require('fs');
 
 	var sync_local = function(self: Storage) {
 		if ((<any>self).m_change) {
@@ -75,16 +116,23 @@ if (isWeb) {
 		(<any>self).m_sync.call();
 	};
 
-	var format_key = function(self: Storage, key: string) {
-		return key
+	var get_val = function(self: Storage, key: string): any {
+		return (<any>self).m_value[key];
 	};
 
-	var stringify_val = function(val: any): any {
-		return val;
+	var set_val = function(self: Storage,  key: string, val: any): any {
+		(<any>self).m_value[key] = val;
+		commit(self);
 	};
 
-	var paese_value = function(val: any): any {
-		return val;
+	var del_val = function(self: Storage, key: string): any {
+		delete (<any>self).m_value[key];
+		commit(self);
+	};
+
+	var clear = function(self: Storage): any {
+		(<any>self).m_value = {};
+		commit(self);
 	};
 }
 
@@ -106,27 +154,22 @@ export interface IStorageSync extends IStorage {
 	clearSync(): void;
 }
 
-/**
- * @class Storage
- */
 export class Storage implements IStorageSync {
-
 	private m_path: string;
 	private m_prefix: string = '';
-	private m_change: boolean = false;
 	private m_value: Dict = {};
+	private m_change: boolean = false;
 	private m_sync: any;
 
 	constructor(path?: string) {
 		this.m_path = url.classicPath(path?path:(isWeb ? location.origin: url.cwd()) + '/' + '.storage');
 		this.m_value = {};
+		this.m_sync = new DelayCall(e=>sync_local(this), 100); // 100ms后保存到文件
 
 		if (isWeb) {
-			this.m_sync = { call: util.noop };
 			this.m_prefix = util.hash(this.m_path || 'default') + '_';
 			this.m_value = localStorage;
 		} else {
-			this.m_sync = new DelayCall(e=>sync_local(this), 100); // 100ms后保存到文件
 			if (fs.existsSync(this.m_path)) {
 				try {
 					this.m_value = JSON.parse(fs.readFileSync(this.m_path, 'utf-8')) || {};
@@ -142,52 +185,30 @@ export class Storage implements IStorageSync {
 	async clear() { this.clearSync() }
 
 	getSync(key: string, defaultValue?: any) {
-		key = format_key(this, key);
-		if (key in this.m_value) {
-			return paese_value(this.m_value[key]);
-		} else {
-			if (defaultValue !== undefined) {
-				this.m_value[key] = stringify_val(defaultValue);
-				commit(this);
-				return defaultValue;
-			}
+		var val = get_val(this, key);
+		if (val !== undefined) {
+			return val;
+		} else if (defaultValue !== undefined) {
+			set_val(this, key, defaultValue);
+			return defaultValue;
 		}
 	}
 
 	hasSync(key: string) {
-		key = format_key(this, key);
-		return key in this.m_value;
+		return has(this, key);
 	}
 
 	setSync(key: string, value: any) {
-		key = format_key(this, key);
-		this.m_value[key] = stringify_val(value);
-		commit(this);
+		set_val(this, key, value);
 	}
 
 	deleteSync(key: string) {
-		key = format_key(this, key);
-		delete this.m_value[key];
-		commit(this);
+		key = del_val(this, key);
 	}
 
 	clearSync() {
-		if (isWeb) {
-			var keys: any[] = [];
-			for (var i in this.m_value) {
-				if (i.substring(0, this.m_prefix.length) == this.m_prefix) {
-					keys.push(i);
-				}
-			}
-			for (var key of keys) {
-				delete this.m_value[key];
-			}
-		} else {
-			this.m_value = {};
-		}
-		commit(this);
+		clear(this);
 	}
-
 }
 
 function _shared(): IStorageSync {

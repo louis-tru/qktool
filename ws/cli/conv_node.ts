@@ -30,7 +30,7 @@
 
 import utils from '../../util';
 import request from '../../request';
-import buffer, {IBuffer} from '../../buffer';
+import buffer, {Buffer} from '../../buffer';
 import errno from '../../errno';
 import * as net from 'net';
 import * as http from 'http';
@@ -183,7 +183,7 @@ export default class NodeConversation extends WSConversation {
 	/**
 	 * @ovrewrite
 	 */
-	send(data: IBuffer): Promise<void> {
+	send(data: Buffer): Promise<void> {
 		utils.assert(this.isOpen, errno.ERR_CONNECTION_CLOSE_STATUS);
 		return WSConversation.write(this, sendDataPacket, [this.m_socket, data]);
 	}

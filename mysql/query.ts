@@ -31,7 +31,7 @@
 import { EventNoticer, Event } from '../event';
 import { Packet, Constants, PacketData } from './parser';
 import {ServerStatus,Charsets} from './constants';
-import bufferLib,{IBuffer} from '../buffer';
+import bufferLib,{Buffer} from '../buffer';
 
 export class Field {
 	readonly name: string;
@@ -102,7 +102,7 @@ export class Query {
 		this.sql = sql;
 	}
 
-	private _ParseField(field: Field, data: IBuffer) {
+	private _ParseField(field: Field, data: Buffer) {
 		switch (field.type) {
 			case FieldType.FIELD_TYPE_STRING:
 			case FieldType.FIELD_TYPE_VAR_STRING:
@@ -205,7 +205,7 @@ export class Query {
 			case Constants.ROW_DATA_PACKET: {
 				let row: Dict = {};
 				let field: Field | null = null;
-				let value: IBuffer | null = null;
+				let value: Buffer | null = null;
 				let fields = <Field[]>this._fields;
 				this._rowIndex = 0;
 				this._row = row;

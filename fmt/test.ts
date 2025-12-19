@@ -1,5 +1,5 @@
 
-import server from '../server';
+import server from '../node/server';
 import * as fmt from '.';
 
 var error = console.error;

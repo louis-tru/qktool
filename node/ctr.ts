@@ -28,12 +28,12 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import util from './util';
+import util from '../util';
 import * as path from 'path';
 import * as fs from './fs';
 import {HttpService} from './http_service';
 import * as vm from 'vm';
-import template, {Options} from './template';
+import template, {Options} from '../template';
 // import * as Module from 'module';
 const Module = require('module');
 

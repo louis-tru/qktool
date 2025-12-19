@@ -217,7 +217,7 @@ export class WSClient extends Notification implements conv.MessageHandle {
 	}
 
 	private _call<T = any>(type: Types, name: string, data?: any, timeout?: number, sender?: string) {
-		return utils.promise(async (resolve: (e?: T)=>void, reject)=>{
+		return utils.promise<T>(async (resolve, reject)=>{
 			var id = utils.id;
 			var calls = this.m_calls;
 			calls.set(id, <CallData>await this._send({

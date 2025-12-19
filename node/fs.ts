@@ -31,7 +31,7 @@
 import {Buffer} from 'buffer';
 import * as Path from 'path';
 import * as fs from 'fs';
-import path2 from './uri';
+import path2 from '../uri';
 export * from 'fs';
 
 const fb = path2.classicPath;

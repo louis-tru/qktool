@@ -31,6 +31,7 @@
 import bl from './bl';
 import { EventEmitter as EE } from 'events';
 import constants from './constants';
+import bf,{Buffer} from '../buffer';
 
 export class Packet {
 	cmd?: string; // null

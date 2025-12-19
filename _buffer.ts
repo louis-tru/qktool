@@ -30,14 +30,15 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 // BigInt support.
-var _bigint: any = null;
-
-if (!!globalThis.BigInt) {
-	(function(ok: any, ...args: any[]) {
-		if (globalThis.document) { // webpack amd
+let _bigint: any;
+if ((globalThis as any).BigInt) {
+	(function(ok: any, req: any) {
+		if (typeof __binding__ == 'function') { // quark
+			ok(__binding__('quark/_bigint'));
+		} else if (globalThis.document) { // webpack amd
 			import('./_bigint.js').then((e: any)=>ok(e)); // bigint syntax, webpack delay load
 		} else { // node cjs
-			ok(args[0]('./_bigint'));
+			ok(req('./_bigint'));
 		}
 	})(function(bigint: any) {
 		_bigint = bigint;
@@ -71,6 +72,7 @@ const float32Array = new Float32Array(1);
 const uInt8Float32Array = new Uint8Array(float32Array.buffer);
 const float64Array = new Float64Array(1);
 const uInt8Float64Array = new Uint8Array(float64Array.buffer);
+
 // Check endianness.
 float32Array[0] = -1; // 0xBF800000
 // Either it is [0, 0, 128, 191] or [191, 128, 0, 0]. It is not possible to
@@ -84,7 +86,7 @@ export function ERR_BUFFER_OUT_OF_BOUNDS(name?: string) {
 	return new RangeError('Attempt to access memory outside buffer bounds');
 }
 
-export function ERR_OUT_OF_RANGE(str: string, range: string, input: number) {
+export function ERR_OUT_OF_RANGE(str: string, range: string, input: any) {
 	return new RangeError(`ERR_OUT_OF_RANGE ${str}, ${range}, ${input}`);
 }
 
@@ -106,7 +108,7 @@ function checkBounds(buf: Uint8Array, offset: number, byteLength: number) {
 		boundsError(offset, buf.length - (byteLength + 1));
 }
 
-function checkInt(value: number, min: number, max: number, buf: Uint8Array, offset: number, byteLength: number) {
+function checkInt(value: any, min: any, max: any, buf: Uint8Array, offset: number, byteLength: number) {
 	if (value > max || value < min) {
 		const n = typeof min === 'bigint' ? 'n' : '';
 		let range;
@@ -158,132 +160,183 @@ function readInt8(self: Uint8Array, offset: number = 0) {
 	return val | (val & 2 ** 7) * 0x1fffffe;
 }
 
-function readInt16BE(self: Uint8Array, offset: number = 0) {
+function readInt16(self: Uint8Array, le: boolean, offset: number = 0) {
 	validateNumber(offset, 'offset');
 	const first = self[offset];
 	const last = self[offset + 1];
 	if (first === undefined || last === undefined)
 		boundsError(offset, self.length - 2);
 
-	const val = first * 2 ** 8 + last;
-	return val | (val & 2 ** 15) * 0x1fffe;
+	const val = le ? last * 2 ** 8 + first : first * 2 ** 8 + last;
+	return val | (val & 2 ** 15) * 0x1fffe; // sign bit check
 }
 
-function readUInt16BE(self: Uint8Array, offset: number = 0) {
+function readUInt16(self: Uint8Array, le: boolean, offset: number = 0) {
 	validateNumber(offset, 'offset');
 	const first = self[offset];
 	const last = self[offset + 1];
 	if (first === undefined || last === undefined)
 		boundsError(offset, self.length - 2);
 
-	return first * 2 ** 8 + last;
+	return le ? last * 2 ** 8 + first : first * 2 ** 8 + last;
 }
 
-function readInt24BE(buf: Uint8Array, offset: number = 0) {
+function readInt24(buf: Uint8Array, le: boolean, offset: number = 0) {
 	validateNumber(offset, 'offset');
 	const first = buf[offset];
 	const last = buf[offset + 2];
 	if (first === undefined || last === undefined)
 		boundsError(offset, buf.length - 3);
 
-	const val = first * 2 ** 16 + buf[++offset] * 2 ** 8 + last;
+	const val = le ?
+		last * 2 ** 16 + buf[++offset] * 2 ** 8 + first :
+		first * 2 ** 16 + buf[++offset] * 2 ** 8 + last;
 	return val | (val & 2 ** 23) * 0x1fe;
 }
 
-function readUInt24BE(buf: Uint8Array, offset: number = 0) {
+function readUInt24(buf: Uint8Array, le: boolean, offset: number = 0) {
 	validateNumber(offset, 'offset');
 	const first = buf[offset];
 	const last = buf[offset + 2];
 	if (first === undefined || last === undefined)
 		boundsError(offset, buf.length - 3);
 
-	return first * 2 ** 16 + buf[++offset] * 2 ** 8 + last;
+	return le ?
+		last * 2 ** 16 + buf[++offset] * 2 ** 8 + first :
+		first * 2 ** 16 + buf[++offset] * 2 ** 8 + last;
 }
 
-function readInt32BE(self: Uint8Array, offset: number = 0) {
+function readInt32(self: Uint8Array, le: boolean, offset: number = 0) {
 	validateNumber(offset, 'offset');
 	const first = self[offset];
 	const last = self[offset + 3];
 	if (first === undefined || last === undefined)
 		boundsError(offset, self.length - 4);
 
-	return (first << 24) + // Overflow
-		self[++offset] * 2 ** 16 +
-		self[++offset] * 2 ** 8 +
-		last;
+	if (le) {
+		return (last << 24) + // Overflow
+			self[offset+2] * 2 ** 16 +
+			self[offset+1] * 2 ** 8 +
+			first;
+	} else {
+		return (first << 24) + // Overflow
+			self[++offset] * 2 ** 16 +
+			self[++offset] * 2 ** 8 +
+			last;
+	}
 }
 
-function readUInt32BE(self: Uint8Array, offset: number = 0) {
+function readUInt32(self: Uint8Array, le: boolean, offset: number = 0) {
 	validateNumber(offset, 'offset');
 	const first = self[offset];
 	const last = self[offset + 3];
 	if (first === undefined || last === undefined)
 		boundsError(offset, self.length - 4);
 
-	return first * 2 ** 24 +
-		self[++offset] * 2 ** 16 +
-		self[++offset] * 2 ** 8 +
-		last;
+	if (le) {
+		return last * 2 ** 24 +
+			self[offset+2] * 2 ** 16 +
+			self[offset+1] * 2 ** 8 +
+			first;
+	} else {
+		return first * 2 ** 24 +
+			self[++offset] * 2 ** 16 +
+			self[++offset] * 2 ** 8 +
+			last;
+	}
 }
 
-function readInt40BE(self: Uint8Array, offset: number = 0) {
+function readInt40(self: Uint8Array, le: boolean, offset: number = 0) {
 	validateNumber(offset, 'offset');
 	const first = self[offset];
 	const last = self[offset + 4];
 	if (first === undefined || last === undefined)
 		boundsError(offset, self.length - 5);
 
-	return (first | (first & 2 ** 7) * 0x1fffffe) * 2 ** 32 +
-		self[++offset] * 2 ** 24 +
-		self[++offset] * 2 ** 16 +
-		self[++offset] * 2 ** 8 +
-		last;
+	if (le) {
+		return (last | (last & 2 ** 7) * 0x1fffffe) * 2 ** 32 +
+		self[offset+3] * 2 ** 24 +
+		self[offset+2] * 2 ** 16 +
+		self[offset+1] * 2 ** 8 +
+		first;
+	} else {
+		return (first | (first & 2 ** 7) * 0x1fffffe) * 2 ** 32 +
+			self[++offset] * 2 ** 24 +
+			self[++offset] * 2 ** 16 +
+			self[++offset] * 2 ** 8 +
+			last;
+	}
 }
 
-function readUInt40BE(self: Uint8Array, offset: number = 0) {
+function readUInt40(self: Uint8Array, le: boolean, offset: number = 0) {
 	validateNumber(offset, 'offset');
 	const first = self[offset];
 	const last = self[offset + 4];
 	if (first === undefined || last === undefined)
 		boundsError(offset, self.length - 5);
 
-	return first * 2 ** 32 +
-		self[++offset] * 2 ** 24 +
-		self[++offset] * 2 ** 16 +
-		self[++offset] * 2 ** 8 +
-		last;
+	if (le) {
+		return last * 2 ** 32 +
+			self[offset+3] * 2 ** 24 +
+			self[offset+2] * 2 ** 16 +
+			self[offset+1] * 2 ** 8 +
+			first;
+	} else {
+		return first * 2 ** 32 +
+			self[++offset] * 2 ** 24 +
+			self[++offset] * 2 ** 16 +
+			self[++offset] * 2 ** 8 +
+			last;
+	}
 }
 
-function readInt48BE(self: Uint8Array, offset: number = 0) {
+function readInt48(self: Uint8Array, le: boolean, offset: number = 0) {
 	validateNumber(offset, 'offset');
 	const first = self[offset];
 	const last = self[offset + 5];
 	if (first === undefined || last === undefined)
 		boundsError(offset, self.length - 6);
 
-	const val = self[++offset] + first * 2 ** 8;
-	return (val | (val & 2 ** 15) * 0x1fffe) * 2 ** 32 +
-		self[++offset] * 2 ** 24 +
-		self[++offset] * 2 ** 16 +
-		self[++offset] * 2 ** 8 +
-		last;
+	if (le) {
+		const val = self[offset + 4] + last * 2 ** 8;
+		return (val | (val & 2 ** 15) * 0x1fffe) * 2 ** 32 +
+			self[offset + 3] * 2 ** 24 +
+			self[offset + 2] * 2 ** 16 +
+			self[offset + 1] * 2 ** 8 +
+			first;
+	} else {
+		const val = self[++offset] + first * 2 ** 8;
+		return (val | (val & 2 ** 15) * 0x1fffe) * 2 ** 32 +
+			self[++offset] * 2 ** 24 +
+			self[++offset] * 2 ** 16 +
+			self[++offset] * 2 ** 8 +
+			last;
+	}
 }
 
-function readUInt48BE(self: Uint8Array, offset: number = 0) {
+function readUInt48(self: Uint8Array, le: boolean, offset: number = 0) {
 	validateNumber(offset, 'offset');
 	const first = self[offset];
 	const last = self[offset + 5];
 	if (first === undefined || last === undefined)
 		boundsError(offset, self.length - 6);
 
-	return (first * 2 ** 8 + self[++offset]) * 2 ** 32 +
-		self[++offset] * 2 ** 24 +
-		self[++offset] * 2 ** 16 +
-		self[++offset] * 2 ** 8 +
-		last;
+	if (le) {
+		return (last * 2 ** 8 + self[offset+4]) * 2 ** 32 +
+			self[offset+3] * 2 ** 24 +
+			self[offset+2] * 2 ** 16 +
+			self[offset+1] * 2 ** 8 +
+			first;
+	} else {
+		return (first * 2 ** 8 + self[++offset]) * 2 ** 32 +
+			self[++offset] * 2 ** 24 +
+			self[++offset] * 2 ** 16 +
+			self[++offset] * 2 ** 8 +
+			last;
+	}
 }
 
-function readBigInt64BE(self: Uint8Array, offset: number = 0): bigint {
+function readBigInt64(self: Uint8Array, le: boolean, offset: number = 0): bigint {
 	validateNumber(offset, 'offset');
 	const first = self[offset];
 	const last = self[offset + 7];
@@ -291,12 +344,14 @@ function readBigInt64BE(self: Uint8Array, offset: number = 0): bigint {
 		boundsError(offset, self.length - 8);
 
 	if (_bigint) {
-		return <bigint>_bigint._readBigInt64BE(self, offset);
+		return le ?
+			<bigint>_bigint._readBigInt64LE(self, offset) :
+			<bigint>_bigint._readBigInt64BE(self, offset);
 	}
 	throw new Error('Not support bigint');
 }
 
-function readBigUInt64BE(self: Uint8Array, offset: number = 0): bigint {
+function readBigUInt64(self: Uint8Array, le: boolean, offset: number = 0): bigint {
 	validateNumber(offset, 'offset');
 	const first = self[offset];
 	const last = self[offset + 7];
@@ -304,7 +359,9 @@ function readBigUInt64BE(self: Uint8Array, offset: number = 0): bigint {
 		boundsError(offset, self.length - 8);
 
 	if (_bigint) {
-		return <bigint>_bigint._readBigUInt64BE(self, offset)
+		return le ?
+			<bigint>_bigint._readBigUInt64LE(self, offset) :
+			<bigint>_bigint._readBigUInt64BE(self, offset);
 	}
 	throw new Error('Not support bigint');
 }
@@ -358,19 +415,19 @@ function readBigUInt64BE_Compatible(self: Uint8Array, offset: number = 0): bigin
 	return hi * 2 ** 32 + lo;
 }
 
-function readIntBE(self: Uint8Array, offset: number = 0, byteLength = 4) {
+function readInt(self: Uint8Array, le: boolean, offset: number = 0, byteLength = 4) {
 	validateNumber(offset, 'offset');
 
 	if (byteLength === 6)
-		return readInt48BE(self, offset);
+		return readInt48(self, le, offset);
 	if (byteLength === 5)
-		return readInt40BE(self, offset);
+		return readInt40(self, le, offset);
 	if (byteLength === 4)
-		return readInt32BE(self, offset);
+		return readInt32(self, le, offset);
 	if (byteLength === 3)
-		return readInt24BE(self, offset);
+		return readInt24(self, le, offset);
 	if (byteLength === 2)
-		return readInt16BE(self, offset);
+		return readInt16(self, le, offset);
 	if (byteLength === 1)
 		return readInt8(self, offset);
 
@@ -379,19 +436,19 @@ function readIntBE(self: Uint8Array, offset: number = 0, byteLength = 4) {
 	return 0;
 }
 
-function readUIntBE(self: Uint8Array, offset: number = 0, byteLength = 4) {
+function readUInt(self: Uint8Array, le: boolean, offset: number = 0, byteLength = 4) {
 	validateNumber(offset, 'offset');
 
 	if (byteLength === 6)
-		return readUInt48BE(self, offset);
+		return readUInt48(self, le, offset);
 	if (byteLength === 5)
-		return readUInt40BE(self, offset);
+		return readUInt40(self, le, offset);
 	if (byteLength === 4)
-		return readUInt32BE(self, offset);
+		return readUInt32(self, le, offset);
 	if (byteLength === 3)
-	return readUInt24BE(self, offset);
+	return readUInt24(self, le, offset);
 	if (byteLength === 2)
-		return readUInt16BE(self, offset);
+		return readUInt16(self, le, offset);
 	if (byteLength === 1)
 		return readUInt8(self, offset);
 
@@ -576,7 +633,7 @@ function writeInt48BE(self: Uint8Array, value: number, offset: number = 0) {
 }
 
 function writeUInt48BE(self: Uint8Array, value: number, offset: number = 0) {
-	return writeU_Int48BE(self, value, offset, 0, 0xffffffffffffff);
+	return writeU_Int48BE(self, value, offset, 0, 0xffffffffffff);
 }
 
 function writeBigInt64BE(self: Uint8Array, value: bigint, offset: number = 0) {
@@ -614,7 +671,7 @@ function writeIntBE(self: Uint8Array, value: number, offset: number = 0, byteLen
 
 function writeUIntBE(self: Uint8Array, value: number, offset: number = 0, byteLength = 4) {
 	if (byteLength === 6)
-		return writeU_Int48BE(self, value, offset, 0, 0xffffffffffffff);
+		return writeU_Int48BE(self, value, offset, 0, 0xffffffffffff);
 	if (byteLength === 5)
 		return writeU_Int40BE(self, value, offset, 0, 0xffffffffff);
 	if (byteLength === 3)
@@ -689,31 +746,49 @@ function writeDoubleBackwards(self: Uint8Array, val: number, offset: number = 0)
 }
 
 var readFloatBE = bigEndian ? readFloatForwards : readFloatBackwards;
+var readFloatLE = bigEndian ? readFloatBackwards : readFloatForwards;
 var readDoubleBE = bigEndian ? readDoubleForwards : readDoubleBackwards;
+var readDoubleLE = bigEndian ? readDoubleBackwards : readDoubleForwards;
 var writeFloatBE = bigEndian ? writeFloatForwards : writeFloatBackwards;
+var writeFloatLE = bigEndian ? writeFloatBackwards : writeFloatForwards;
 var writeDoubleBE = bigEndian ? writeDoubleForwards : writeDoubleBackwards;
+var writeDoubleLE = bigEndian ? writeDoubleBackwards : writeDoubleForwards;
 
 export default {
 	get BigInt() { return (globalThis as any).BigInt },
 	// read
 	readInt8, readUInt8,
-	readInt16BE, readUInt16BE,
-	readInt32BE, readUInt32BE,
-	readInt40BE, readUInt40BE,
-	readInt48BE, readUInt48BE,
-	readBigInt64BE, readBigUInt64BE,
-	readBigInt64BE_Compatible, readBigUInt64BE_Compatible,
-	readIntBE, readUIntBE,
-	readFloatBE, readDoubleBE,
-	readBigUIntBE,
-	readBigUIntLE,
+	readInt16,
+	readUInt16,
+	readInt32,
+	readUInt32,
+	readInt40,
+	readUInt40,
+	readInt48,
+	readUInt48,
+	readBigInt64,
+	readBigUInt64,
+	readBigInt64BE_Compatible,
+	readBigUInt64BE_Compatible,
+	readInt,
+	readUInt,
+	readFloatBE, readFloatLE,
+	readDoubleBE, readDoubleLE,
+	readBigUIntBE, readBigUIntLE,
 	// write
-	writeInt8, writeUInt8,
-	writeInt16BE, writeUInt16BE,
-	writeInt32BE, writeUInt32BE,
-	writeInt48BE, writeUInt48BE,
-	writeBigInt64BE, writeBigUInt64BE,
-	writeIntBE, writeUIntBE,
-	writeFloatBE, writeDoubleBE,
+	writeInt8,
+	writeUInt8,
+	writeInt16BE,
+	writeUInt16BE,
+	writeInt32BE,
+	writeUInt32BE,
+	writeInt48BE,
+	writeUInt48BE,
+	writeBigInt64BE,
+	writeBigUInt64BE,
+	writeIntBE,
+	writeUIntBE,
+	writeFloatBE, writeFloatLE,
+	writeDoubleBE, writeDoubleLE,
 	writeBigIntLE,
 };

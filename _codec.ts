@@ -28,11 +28,11 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import utils from './util';
+import * as util from './_common';
 import errno from './errno';
 import base_x, {Encoder} from './_base_x';
 
-type ArrayNumber = ArrayLike<number>;
+type ArrayUint8 = ArrayLike<Uint>;
 
 var b64pad = '=';
 var hex_tab = '0123456789abcdef';
@@ -110,7 +110,7 @@ function encodeUTF8Word(unicode: number): number[] {
 }
 
 // convert utf8 bytes to unicode
-function decodeUTF8Word(bytes: ArrayNumber, offset: number) {
+function decodeUTF8Word(bytes: ArrayUint8, offset: number) {
 	var str = offset;
 	var c = bytes[str]; str++;
 	if ((c & 0x80) == 0) { // 小于 128 (c & 10000000) == 00000000
@@ -196,7 +196,7 @@ function encodeUTF16Word(unicode: number): number[] {
 	}
 }
 
-function decodeUTF16Word(bytes: ArrayNumber, offset: number) {
+function decodeUTF16Word(bytes: ArrayUint8, offset: number) {
 	let str = offset;
 	let c = bytes[str]; str++;
 	if (c >> 10 == 0b110110) { // 4 bytes encode
@@ -265,7 +265,7 @@ function encodeUTF8(str: string): number[] {
 }
 
 // convert utf8 bytes to a str
-function decodeUTF8From(bytes: ArrayNumber, start: number, end: number): string {
+function decodeUTF8From(bytes: ArrayUint8, start: number, end: number): string {
 	checkOffset(bytes, start, end);
 	var str = [];
 	for(var i = start; i < end;) {
@@ -278,7 +278,7 @@ function decodeUTF8From(bytes: ArrayNumber, start: number, end: number): string 
 }
 
 // bytes => string
-function decodeUTF8(bytes: ArrayNumber): string {
+function decodeUTF8(bytes: ArrayUint8): string {
 	return decodeUTF8From(bytes, 0, bytes.length);
 }
 
@@ -303,7 +303,7 @@ function encodeAsciiFrom(str: string): number[] {
 }
 
 // bytes => string
-function encodeHexFrom(bytes: ArrayNumber, start: number, end: number): string {
+function encodeHexFrom(bytes: ArrayUint8, start: number, end: number): string {
 	checkOffset(bytes, start, end);
 	var str = '';
 	for(var i = start; i < end; i++) {
@@ -313,7 +313,7 @@ function encodeHexFrom(bytes: ArrayNumber, start: number, end: number): string {
 }
 
 // bytes => string
-function encodeBase64From(bytes: ArrayNumber, start: number, end: number): string {
+function encodeBase64From(bytes: ArrayUint8, start: number, end: number): string {
 	checkOffset(bytes, start, end);
 	var size = end - start;
 	var str = '';
@@ -329,21 +329,21 @@ function encodeBase64From(bytes: ArrayNumber, start: number, end: number): strin
 	return str;
 }
 
-function encodeBase58From(bytes: ArrayNumber, start: number, end: number): string {
+function encodeBase58From(bytes: ArrayUint8, start: number, end: number): string {
 	return base58().encode(bytes, start, end);
 }
 
 // decode
 
-function checkOffset(bytes: ArrayNumber, start: number, end: number): void {
-	utils.assert(start >= 0, errno.ERR_BAD_ARGUMENT);
-	utils.assert(end >= start, errno.ERR_BAD_ARGUMENT);
-	utils.assert(end <= bytes.length, errno.ERR_BAD_ARGUMENT);
+function checkOffset(bytes: ArrayUint8, start: number, end: number): void {
+	util.assert(start >= 0, errno.ERR_BAD_ARGUMENT);
+	util.assert(end >= start, errno.ERR_BAD_ARGUMENT);
+	util.assert(end <= bytes.length, errno.ERR_BAD_ARGUMENT);
 	// utils.assert(end >= start, errno.ERR_BAD_ARGUMENT);
 }
 
 // bytes => string
-function decodeLatin1From(bytes: ArrayNumber, start: number, end: number): string {
+function decodeLatin1From(bytes: ArrayUint8, start: number, end: number): string {
 	checkOffset(bytes, start, end);
 	var str = '';
 	for(var i = start; i < end; i++)
@@ -352,7 +352,7 @@ function decodeLatin1From(bytes: ArrayNumber, start: number, end: number): strin
 }
 
 // bytes => string
-function decodeAsciiFrom(bytes: ArrayNumber, start: number, end: number): string {
+function decodeAsciiFrom(bytes: ArrayUint8, start: number, end: number): string {
 	checkOffset(bytes, start, end);
 	var str = '';
 	for(var i = start; i < end; i++)
@@ -363,7 +363,7 @@ function decodeAsciiFrom(bytes: ArrayNumber, start: number, end: number): string
 // hex string => bytes
 function decodeHex(str: string): number[] {
 	var ERR_BAD_ARGUMENT = errno.ERR_BAD_ARGUMENT;
-	utils.assert(str.length % 2 === 0, ERR_BAD_ARGUMENT);
+	util.assert(str.length % 2 === 0, ERR_BAD_ARGUMENT);
 	var bytes = [];
 	for (var i = 0, l = str.length; i < l; i+=2) {
 		var a = <number>hex_keys.get(str[i]);
@@ -433,22 +433,69 @@ function decodeBase58(str: string): Uint8Array {
 /*
  * Convert an array of bytes to a hex string.
  */
-function convertHexString(bytes: ArrayNumber) {
+function convertHexString(bytes: ArrayUint8) {
 	return encodeHexFrom(bytes, 0, bytes.length);
 }
 
 /*
  * Convert an array of bytes to a base64 string.
  */
-function convertBase64String(bytes: ArrayNumber) {
+function convertBase64String(bytes: ArrayUint8) {
 	return encodeBase64From(bytes, 0, bytes.length);
 }
 
 /*
  * Convert an array of bytes to a base64 string.
  */
-function convertBase58String(bytes: ArrayNumber) {
+function convertBase58String(bytes: ArrayUint8) {
 	return encodeBase58From(bytes, 0, bytes.length);
+}
+
+/**
+ * from string to Uint8Array
+*/
+function fromString(from: string, encoding?: string): Uint8Array {
+	encoding = typeof encoding == 'string' ? encoding : 'utf8';
+	if (encoding == 'utf8' || encoding == 'utf-8') {
+		return new Uint8Array(encodeUTF8(from));
+	} else if (encoding == 'hex') {
+		return new Uint8Array(decodeHex(from));
+	} else if (encoding == 'base64') {
+		return new Uint8Array(decodeBase64(from));
+	} else if (encoding == 'base58') {
+		return new Uint8Array(decodeBase58(from));
+	} else if (encoding == 'latin1' || encoding == 'binary') {
+		return new Uint8Array(encodeLatin1From(from));
+	} else if (encoding == 'ascii') {
+		return new Uint8Array(encodeAsciiFrom(from));
+	} else {
+		return new Uint8Array(encodeUTF8(from));
+	}
+}
+
+/**
+ * to string from ArrayUint8
+*/
+function toString(buf: ArrayUint8, encoding?: string, start: Uint = 0, end: number = buf.length): string {
+	if (encoding) {
+		if (encoding == 'utf8' || encoding == 'utf-8') {
+			return decodeUTF8From(buf, start, end);
+		} else if (encoding == 'hex') {
+			return encodeHexFrom(buf, start, end);
+		} else if (encoding == 'base64') {
+			return encodeBase64From(buf, start, end);
+		} else if (encoding == 'base58') {
+			return encodeBase58From(buf, start, end);
+		} else if (encoding == 'latin1' || encoding == 'binary') {
+			return decodeLatin1From(buf, start, end);
+		} else if (encoding == 'ascii') {
+			return decodeAsciiFrom(buf, start, end);
+		} else {
+			return decodeUTF8From(buf, start, end);
+		}
+	} else {
+		return decodeUTF8From(buf, start, end);
+	}
 }
 
 export default {
@@ -467,6 +514,7 @@ export default {
 	encodeUTF16Word,
 	decodeUTF16Word,
 	encodeUTF16WordLength,
+	toString, // encode to string from bytes and encoding
 	// decode
 	decodeUTF8Word,
 	decodeUTF8From,
@@ -476,6 +524,7 @@ export default {
 	decodeHex,
 	decodeBase64,
 	decodeBase58,
+	fromString, // decode from string and encoding
 	// ext
 	convertHexString,
 	convertBase64String,

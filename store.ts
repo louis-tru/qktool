@@ -33,7 +33,7 @@ import path from './uri';
 import { Notification } from './event';
 import { Request, Options as RequestOptions, Signer, parseJSON } from'./request';
 import { WSConversation, WSClient, METHOD_CALL_TIMEOUT } from './ws/cli';
-import {IBuffer} from './buffer';
+import {Buffer} from './buffer';
 import * as log from './log';
 
 if (utils.isWeb) {
@@ -152,7 +152,7 @@ class Request2 extends Request {
 		this.m_host = host;
 	}
 
-	parseResponseData(buf: IBuffer) {
+	parseResponseData(buf: Buffer) {
 		var res = parseJSON(buf.toString('utf8'));
 		if (res.errno === 0) {
 			return res.data;

@@ -28,7 +28,7 @@
  * 
  * ***** END LICENSE BLOCK ***** */
 
-import util from './util';
+import util from '../util';
 import {Cookie} from './cookie';
 import {Service} from './service';
 import {StaticService} from './static_service';
@@ -37,7 +37,7 @@ import * as http from 'http';
 import * as zlib from 'zlib';
 import {IncomingForm,IFileStream} from './incoming_form';
 import {RuleResult} from './router';
-import errno from './errno';
+import errno from '../errno';
 
 var StaticService_onAction = StaticService.prototype.onAction;
 
