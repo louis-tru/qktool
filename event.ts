@@ -28,40 +28,31 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+import type * as all from './_event';
+
 // ======================== IMPL ========================
-
-var _ex: any;
-
 declare var __webpack_exports__: any;
+var _ex = typeof __webpack_exports__ == 'object' ? __webpack_exports__ : exports;
+Object.assign(_ex, typeof __binding__ == 'function' ? __binding__('_event') : require('./_event'));
 
-if (typeof __binding__ == 'function') { // quark
-	_ex = Object.assign(exports, __binding__('_event'));
-} else if (typeof __webpack_exports__ == 'object') {
-	_ex = Object.assign(__webpack_exports__, require('./_event'));
-} else {
-	_ex = Object.assign(exports, require('./_event'));
-}
+export type event = typeof all.event;
+export const event = _ex.event as typeof all.event;
+export default event;
 
-import * as _event from './_event';
+export type ListIterator<T> = all.ListIterator<T>;
+export type List<T = any> = all.List<T>;
+export const List = _ex.List as typeof all.List;
+export type Event<Sender = any, SendData = any> = all.Event<Sender, SendData>;
+export const Event = _ex.Event as typeof all.Event;
 
-export type event = typeof _event.event;
-export const event = _ex.event as typeof _event.event;
-export default (_ex.event as typeof event);
+export type Listen<E = Event, Ctx extends object = object> = all.Listen<E, Ctx>;
+export type Listen2<E = Event, Ctx extends object = object> = all.Listen2<E, Ctx>;
 
-export type ListIterator<T> = _event.ListIterator<T>;
-export type List<T = any> = _event.List<T>;
-export const List = _ex.List as typeof _event.List;
-export type Event<Sender = any, SendData = any> = _event.Event<Sender, SendData>;
-export const Event = _ex.Event as typeof _event.Event;
+export type SenderOf<T> = all.SenderOf<T>;
+export type DataOf<T> = all.DataOf<T>;
 
-export type Listen<E = Event, Ctx extends object = object> = _event.Listen<E, Ctx>;
-export type Listen2<E = Event, Ctx extends object = object> = _event.Listen2<E, Ctx>;
+export type EventNoticer<E extends Event = Event> = all.EventNoticer<E>;
+export const EventNoticer = _ex.EventNoticer as typeof all.EventNoticer;
 
-export type SenderOf<T> = _event.SenderOf<T>;
-export type DataOf<T> = _event.DataOf<T>;
-
-export type EventNoticer<E extends Event = Event> = _event.EventNoticer<E>;
-export const EventNoticer = _ex.EventNoticer as typeof _event.EventNoticer;
-
-export type Notification<E extends Event = Event> = _event.Notification<E>;
-export const Notification = _ex.Notification as typeof _event.Notification;
+export type Notification<E extends Event = Event> = all.Notification<E>;
+export const Notification = _ex.Notification as typeof all.Notification;

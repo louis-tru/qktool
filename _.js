@@ -14,9 +14,9 @@ function cp_base_from_qk(baseDir) {
 		['errno.ts', '_errno.ts'],
 		'_event.ts',
 		'_ext.ts',
-		'buffer.ts',
-		'jsonb.ts',
-		'uri.ts',
+		['buffer.ts', '_buffer_impl.ts'],
+		['jsonb.ts', '_jsonb.ts'],
+		['uri.ts', '_uri.ts'],
 		'defs.ts',
 	].map(function(name) {
 		var outName = name;
