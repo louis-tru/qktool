@@ -29,7 +29,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 if (typeof __binding__ == 'function') {
-	require('quark/_ext');
+	require('quark/_ext'); // only use in quark
 } else {
 	require('./_ext');
 }

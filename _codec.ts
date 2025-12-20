@@ -31,6 +31,7 @@
 import * as util from './_common';
 import errno from './errno';
 import base_x, {Encoder} from './_base_x';
+import {Uint} from './defs';
 
 type ArrayUint8 = ArrayLike<Uint>;
 

@@ -28,7 +28,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-import { ErrnoList as ErrnoListBase } from './_errno'
+import { ErrnoCode } from './defs';
+import { ErrnoList as ErrnoListBase } from './_errno';
 
 export class ErrnoList extends ErrnoListBase {
 	ERR_MONITOR_BEEN_STARTED: ErrnoCode = [-30001, 'MONITOR BEEN STARTED']

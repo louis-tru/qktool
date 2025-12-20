@@ -12,6 +12,7 @@
 
 import util from './util';
 import buffer, {Buffer} from '../buffer';
+import {Uint} from '../defs';
 
 const {chrsz,bin2binl,binl2bin} = util;
 

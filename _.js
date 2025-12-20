@@ -11,15 +11,19 @@ function cp_base_from_qk(baseDir) {
 		'_bigint.js',
 		'_buffer.ts',
 		'_common.ts',
-		'_errno.ts',
+		['errno.ts', '_errno.ts'],
 		'_event.ts',
 		'_ext.ts',
 		'buffer.ts',
 		'jsonb.ts',
 		'uri.ts',
+		'defs.ts',
 	].map(function(name) {
+		var outName = name;
+		if (Array.isArray(name))
+			var [name, outName] = name;
 		const bf = fs.readFileSync(`${baseDir}/${name}`);
-		fs.writeFileSync(`${out}/${name}`, bf);
+		fs.writeFileSync(`${out}/${outName}`, bf);
 	});
 }
 
@@ -54,6 +58,12 @@ fs.writeFileSync(
 	`${__dirname}/out/${pkg.name}/package.json`, JSON.stringify(pkg, null, 2),
 );
 
+// Remove package-lock.json
 var pkg_lock = `${__dirname}/out/${pkg.name}/package-lock.json`;
 if (fs.existsSync(pkg_lock))
 	fs.unlinkSync(pkg_lock);
+
+// Remove tsconfig.json
+var tsconfig = `${__dirname}/out/${pkg.name}/tsconfig.json`;
+if (fs.existsSync(tsconfig))
+	fs.unlinkSync(tsconfig);

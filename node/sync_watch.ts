@@ -65,7 +65,9 @@ function each_directory(root: string, dir: string, cb: Callback) {
 	});
 }
 
-function sync(type: string, dir: string, filename: string) {
+function sync(type: string, dir: string, filename: string | null) {
+	if (!filename)
+		return;
 	if (
 		ignore.indexOf(filename) >= 0 ||
 		ignore.indexOf(path.basename(filename)) >= 0 || // basename
