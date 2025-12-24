@@ -35,6 +35,7 @@ declare var __webpack_exports__: any;
 var _ex = typeof __webpack_exports__ == 'object' ? __webpack_exports__ : exports;
 Object.assign(_ex, typeof __binding__ == 'function' ? require('quark/uri') : require('./_uri'));
 
+export declare const cwd: typeof all.cwd;
 export declare const classicPath: typeof all.classicPath;
 export declare const delimiter: typeof all.delimiter;
 export declare const normalizePath: typeof all.normalizePath;

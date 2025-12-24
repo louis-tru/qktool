@@ -1,6 +1,6 @@
 {
 	"name": "qktool",
-	"version": "0.2.10",
+	"version": "0.2.11",
 	"description": "This is a collection of tools, independent of any other libraries",
 	"main": "index.js",
 	"types": "index",
@@ -14,7 +14,7 @@
 		"build": "node _.js cp_base && tsc && tsc -removeComments false -emitDeclarationOnly && cp LICENSE *.md *.json *.keys out/qktool && cp node/*.types out/qktool/node && node _.js"
 	},
 	"dependencies": {
-		"@types/node": "~20.14.8"
+		"@types/node": "~22.13.14"
 	},
 	"keywords": [
 		"mysql",

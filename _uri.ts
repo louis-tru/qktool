@@ -116,13 +116,29 @@ const posix = {
 
 const paths = _win32 ? win32: posix;
 
+/**
+ * get current working directory
+ * @method cwd()string
+*/
+export const cwd = _cwd;
+
+/**
+ * convert to classic path, for: file:///d:/test/path.js => d:\test\path.js
+ * @method classicPath(path:string)string
+ */
 export const classicPath = paths.classicPath;
+
+/**
+ * path delimiter
+ * @const delimiter:string
+*/
 export const delimiter = paths.delimiter;
 
 /**
  * normalizePath
+ * @member normalizePath(path:string,retainUp?:boolean)string
  */
-export function normalizePath(path: string, retain_level: boolean = false): string {
+export function normalizePath(path: string, retainUp: boolean = false): string {
 	var ls = path.split('/');
 	var rev = [];
 	var up = 0;
@@ -139,7 +155,7 @@ export function normalizePath(path: string, retain_level: boolean = false): stri
 	}
 	path = rev.reverse().join('/');
 
-	return (retain_level ? new Array(up + 1).join('../') + path : path);
+	return (retainUp ? new Array(up + 1).join('../') + path : path);
 }
 
 /**
@@ -147,6 +163,7 @@ export function normalizePath(path: string, retain_level: boolean = false): stri
  * file:///d:/home/louis/test.txt
  * http://google.com/test.txt
  * return format path
+ * @method resolve(path:string,partPath?string)string
  */
 export function resolve(...args: string[]): string {
 	let path = paths.joinPath(args);

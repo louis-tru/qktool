@@ -33,40 +33,40 @@ import type {Any,Uint,Int,ErrnoCode,ErrorNewArg} from './defs';
 // Declare global types
 declare global {
 
+	namespace NodeJS {
+		interface RequireResolve {
+			(id: string, options?: { paths?: string[]; }): string;
+			paths(request: string): string[] | null;
+		}
+		interface Require {
+			(id: string): any;
+			resolve: RequireResolve;
+			// cache: Dict<Module>;
+			main: Module | undefined;
+		}
+		interface Module {
+			id: string;
+			exports: any;
+			filename: string;
+			loaded: boolean;
+			children: Module[];
+			paths: string[];
+			parent: Module | null | undefined;
+			package?: any;
+			require(id: string): any;
+		}
+	}
+
 	namespace qk {
-		interface Require extends NodeRequire {}
-		interface Module extends NodeModule {}
-	}
-
-	interface RequireResolve {
-		(id: string, options?: { paths?: string[]; }): string;
-		paths(request: string): string[] | null;
-	}
-
-	interface NodeRequire {
-		(id: string): any;
-		resolve: RequireResolve;
-		// cache: Dict<NodeModule>;
-		main: NodeModule | undefined;
-	}
-
-	interface NodeModule {
-		id: string;
-		exports: any;
-		filename: string;
-		loaded: boolean;
-		children: NodeModule[];
-		paths: string[];
-		parent: NodeModule | null | undefined;
-		package?: any;
-		require: any; // (id: string): any;
+		interface Require extends NodeJS.Require {}
+		interface Module extends NodeJS.Module {}
 	}
 
 	var __binding__: (id: string)=>any; // binding native module
 	var __filename: string;
 	var __dirname: string;
-	var require: NodeRequire;
-	var module: NodeModule;
+	var require: qk.Require;
+	var module: qk.Module;
 	var exports: any; // Same as module.exports
 
 	/**

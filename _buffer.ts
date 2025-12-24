@@ -43,7 +43,7 @@ if ((globalThis as any).BigInt) {
 	})(function(bigint: any) {
 		_bigint = bigint;
 		_bigint._set(checkInt);
-	}, require);
+	}, typeof require === 'function' ? require : null);
 }
 
 function readBigUIntBE(self: Uint8Array, offset: number = 0, end: number = self.length): bigint {

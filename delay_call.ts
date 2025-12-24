@@ -45,7 +45,7 @@ export class DelayCall<A extends any[]> {
 
 	call(...args: A) {
 		this.clear();
-		this.m_timeoutid = setTimeout(e=>{
+		this.m_timeoutid = setTimeout(()=>{
 			this.m_onExecute(...args);
 		}, this.m_delay);
 	}
