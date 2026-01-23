@@ -46,7 +46,7 @@ function primaryKey(mkey: string) {
 	var [key,key2] = mkey.split('=');
 	var fetchKeyPath = (key2 || key).split('.');
 	return {
-		pkeyName: key2 ? key: fetchKeyPath.indexReverse(0),
+		pkeyName: key2 ? key: fetchKeyPath.reverseAt(0),
 		fetchKeyPath,
 	};
 }

@@ -244,7 +244,7 @@ export class Console extends Notification {
 		var time = this.m_timeStack.get(tag);
 		if (!time)
 			return warn(`No such label '${tag}' for console.timeLog()`);
-		var privline = time.timelines.indexReverse(0);
+		var privline = time.timelines.reverseAt(0);
 		var line = { tag, date: new Date() };
 		time.timelines.push(line);
 		this.log(timeSpace(this), prefix, 
@@ -268,7 +268,7 @@ export class Console extends Notification {
 			}
 		});
 		this.log(timeSpace(this), 'Total   ', '--------------------', tag1, 
-			timelines.indexReverse(0).date.valueOf() - timelines[0].date.valueOf(), '--------------------');
+			timelines.reverseAt(0).date.valueOf() - timelines[0].date.valueOf(), '--------------------');
 	}
 
 }

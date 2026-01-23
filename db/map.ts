@@ -509,7 +509,7 @@ function parse_sql_ls(self: SqlMap, ls: _Child[], param: INLParams,
 						asql.group.push(end_pos);
 						asql.sql.push(` group by ${value} `);
 						if (asql.out.length) {
-							var index = asql.out.indexReverse(0)[1];
+							var index = asql.out.reverseAt(0)[1];
 							asql.sql[index] += ' , count(*) as data_count ';
 							asql.out.pop();
 						}
@@ -589,7 +589,7 @@ function parseSql(self: SqlMap, name: string, param: QueryParams, options: Optio
 		// order
 		if ( param.order_str && !asql.order.length ) {
 			if (asql.limit.length) {
-				var index = asql.limit.indexReverse(0);
+				var index = asql.limit.reverseAt(0);
 				var sql = asql.sql[index];
 				asql.sql[index] = ` order by ${param.order_str} ${sql} `;
 				asql.order.push(index);
@@ -602,12 +602,12 @@ function parseSql(self: SqlMap, name: string, param: QueryParams, options: Optio
 		// group
 		if ( param.group_str && !asql.group.length ) {
 			if (asql.order.length) {
-				var index = asql.order.indexReverse(0);
+				var index = asql.order.reverseAt(0);
 				var sql = asql.sql[index];
 				asql.sql[index] = ` group by ${param.group_str} ${sql} `;
 				asql.group.push(index);
 			} else if (asql.limit.length) {
-				var index = asql.limit.indexReverse(0);
+				var index = asql.limit.reverseAt(0);
 				var sql = asql.sql[index];
 				asql.sql[index] = ` group by ${param.group_str} ${sql} `;
 				asql.group.push(index);
@@ -617,13 +617,13 @@ function parseSql(self: SqlMap, name: string, param: QueryParams, options: Optio
 			}
 
 			if (asql.out.length) {
-				var index = asql.out.indexReverse(0)[1];
+				var index = asql.out.reverseAt(0)[1];
 				asql.sql[index] += ' , count(*) as data_count ';
 				asql.out.pop();
 			}
 		} else if (is_total) {
 			if (asql.out.length) {
-				var index = asql.out.indexReverse(0)[1];
+				var index = asql.out.reverseAt(0)[1];
 				asql.sql[index] += ' , count(*) as data_count ';
 				asql.out.pop();
 			}

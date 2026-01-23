@@ -47,8 +47,8 @@ function setDefaultHeader(self: StaticService, expires?: number) {
 		expires = expires === undefined ? self.server.expires : expires;
 		if (expires) {
 			if (!(<any>self).m_no_cache/*!res.headers['Cache-Control'] && !res.headers['Expires']*/) {
-				// console.log(new Date().addMs(6e4 * expires).toUTCString());
-				res.setHeader('Expires', new Date().add(6e4 * expires).toUTCString());
+				// console.log(new Date().addMilliseconds(6e4 * expires).toUTCString());
+				res.setHeader('Expires', new Date().addMilliseconds(6e4 * expires).toUTCString());
 				res.setHeader('Cache-Control', 'public, max-age=' + (expires * 60));
 			}
 		}
