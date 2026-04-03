@@ -7,7 +7,7 @@
 		"sourceMap": false,
 		"outDir": "out/qktool",
 		"rootDir": ".",
-		"baseUrl": ".",
+		// "ignoreDeprecations": "6.0",
 		"declaration": true,
 		"alwaysStrict": true,
 		"allowJs": true,
@@ -20,6 +20,7 @@
 		"emitDecoratorMetadata": false,
 		"experimentalDecorators": true,
 		"removeComments": true,
+		"types": ["node"],
 	},
 	"include": [
 		"**/*",

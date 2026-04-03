@@ -94,7 +94,7 @@ export class WSClient extends Notification implements conv.MessageHandle {
 		utils.assert(this.m_conv);
 
 		this.m_conv.onOpen.on(e=>{
-			this.m_Intervalid = setInterval(e=>this._checkTimeout(), 3e4); // 30s
+			this.m_Intervalid = setInterval(()=>this._checkTimeout(), 3e4); // 30s
 		});
 
 		this.m_conv.onClose.on(async e=>{
