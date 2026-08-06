@@ -35,13 +35,11 @@ if (options.i) {
 	}
 }
 
-// console.log('ignore-------------', ignore)
-
 interface Callback {
 	(pathname: string, name: string, extname: string, is_dir: boolean): boolean;
 }
 
-function each_directory(root: string, dir: string, cb: Callback) {
+function eachDirectory(root: string, dir: string, cb: Callback) {
 	fs.readdirSync(root + '/' + dir).forEach(name=>{
 		var pathname = dir + (dir ? '/': '') + name;
 		var stat;
@@ -55,7 +53,7 @@ function each_directory(root: string, dir: string, cb: Callback) {
 			var ext = path.extname(pathname);
 			if (stat.isDirectory()) {
 				if (cb(pathname, name, ext, true)) {
-					each_directory(root, pathname, cb);
+					eachDirectory(root, pathname, cb);
 				}
 			} else {
 				var name = pathname.substring(0, pathname.length - ext.length);
@@ -65,37 +63,38 @@ function each_directory(root: string, dir: string, cb: Callback) {
 	});
 }
 
-function sync(type: string, dir: string, filename: string | null) {
-	if (!filename)
+function sync(type: string, dir: string, name: string | null) {
+	if (!name)
 		return;
-	if (
-		ignore.indexOf(filename) >= 0 ||
-		ignore.indexOf(path.basename(filename)) >= 0 || // basename
-		ignore.indexOf(path.extname(filename)) >= 0    // extname
-	)
+	let ext = path.extname(name);
+	let pathname = path.join(dir, name);
+	if (ignore.find(e=>{
+		if (e == ext)
+			return true;
+		if (e == name)
+			return true;
+		if (pathname.indexOf(e) == 0)
+			return true;
+	}))
 		return;
-	console.log('sync', type, `${dir}/${filename}`, '...');
-	var cmd = `scp ${root}/${dir}/${filename} ${target}/${dir}`;
-	// console.log(cmd);
+	console.log('sync', type, pathname, '...');
+	var cmd = `scp ${root}/${pathname} ${target}/${dir}`;
 	var r = execSync(cmd);
-	console.log('sync', type, `${dir}/${filename}`, r.code == 0 ? 'ok': 'fail');
+	console.log('sync', type, `${pathname}`, r.code == 0 ? 'ok': 'fail');
 }
 
 function start() {
-
 	fs.watch(root, (type, filename)=>sync(type, '.', filename));
 
-	each_directory(root, '', function(pathname: string, name: string, ext: string, is_dir: boolean) {
+	eachDirectory(root, '', function(pathname: string, name: string, ext: string, is_dir: boolean) {
 		if (is_dir) {
-			if (ignore.indexOf(name) >= 0 || 
+			if (ignore.indexOf(name) >= 0 ||
 					ignore.indexOf(pathname) >= 0 ||
 					ignore.indexOf(ext) >= 0
 			) {
-				// console.log(pathname);
 				return false;
 			}
-			// console.log('-------------', root + '/' + pathname)
-			fs.watch(root + '/' + pathname, (type, filename)=>sync(type, pathname, filename));
+			fs.watch(root + '/' + pathname, (type, name)=>sync(type, pathname, name));
 			count++;
 			return true;
 		}
@@ -106,12 +105,13 @@ function start() {
 
 	execSync(`cd ${root}; git status -s | awk '{print $2}'`).stdout.forEach(e=>{
 		if (e) {
-			sync('init', path.dirname(e), path.basename(e));
+			const stat = fs.lstatSync(e);
+			if (stat.isFile())
+				sync('init', path.dirname(e), path.basename(e));
 		}
 	});
 
 	console.log(`---------------- Start watch dir count ${count} ... ---------------- `);
-
 }
 
 setTimeout(start, Number(options.d) || 0);
