@@ -8,6 +8,8 @@
 		"outDir": "out/qktool",
 		"rootDir": ".",
 		"ignoreDeprecations": "6.0",
+		"esModuleInterop": false,
+		"allowSyntheticDefaultImports": false,
 		"declaration": true,
 		"alwaysStrict": true,
 		"allowJs": true,
